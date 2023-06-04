@@ -135,7 +135,6 @@ class TriggerCardsAdapter(private var triggers: MutableList<Trigger>) :
                     holder.triggerTimeExpired.text = "Upcoming"
                 }
             }
-
         }
         holder.triggerDateTextView.text = DateD
         holder.triggerTimeTextView.text = time.toString()
@@ -163,7 +162,7 @@ class TriggerCardsAdapter(private var triggers: MutableList<Trigger>) :
             val recyclerView = view.parent as? RecyclerView
             recyclerView?.let {
                 val transition = ChangeBounds().apply {
-                    duration = 150 // Adjust the duration as needed
+                    duration = 500 // Adjust the duration as needed
                 }
                 TransitionManager.beginDelayedTransition(recyclerView, transition)
                 notifyDataSetChanged()

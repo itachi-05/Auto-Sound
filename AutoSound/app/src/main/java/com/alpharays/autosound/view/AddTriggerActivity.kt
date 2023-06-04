@@ -232,7 +232,7 @@ class AddTriggerActivity : AppCompatActivity() {
                 if (dateSelected == null) {
                     showSnackBar("Select date to create Trigger")
                 } else if (timeSelected == "" || timeSelected.isEmpty()) {
-                    showSnackBar("Select tmie to create Trigger")
+                    showSnackBar("Select time to create Trigger")
                 } else if (timeSelected != "" && timeSelected.isNotEmpty() && dateSelected != null) {
                     val trigger = Trigger(
                         false,
