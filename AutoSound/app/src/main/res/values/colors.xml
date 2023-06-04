@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="darkMode">#FF000000</color>
+    <color name="lightMode">#FFFFFFFF</color>
+    <color name="mineShaft">#303030</color>
+    <color name="doveGray">#616161</color>
+    <color name="mineShaftDark">#212121</color>
+    <color name="malibu">#4cd7fd</color>
+    <color name="bluemine">#1d6073</color>
+    <color name="silver">#bebebe</color>
+    <color name="boulder">#7c7979</color>
+    <color name="background_material_dark">#262626</color>
+    <color name="test">#ff424242</color>
+</resources>
