@@ -10,5 +10,7 @@
     <color name="silver">#bebebe</color>
     <color name="boulder">#7c7979</color>
     <color name="background_material_dark">#262626</color>
+    <color name="red">#FF0000</color>
     <color name="test">#ff424242</color>
+
 </resources>

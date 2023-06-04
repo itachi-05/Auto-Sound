@@ -48,7 +48,7 @@
                         android:layout_width="25dp"
                         android:layout_height="25dp"
                         android:layout_marginEnd="5dp"
-                        android:background="#00000000"
+                        android:background="?attr/selectableItemBackgroundBorderless"
                         android:gravity="end"
                         android:scaleType="centerCrop"
                         android:src="@drawable/baseline_edit_24" />
@@ -58,7 +58,7 @@
                         android:layout_width="25dp"
                         android:layout_height="25dp"
                         android:layout_marginEnd="5dp"
-                        android:background="#00000000"
+                        android:background="?attr/selectableItemBackgroundBorderless"
                         android:gravity="end"
                         android:scaleType="centerCrop"
                         android:src="@drawable/baseline_delete_24" />
@@ -72,7 +72,6 @@
                 android:id="@+id/triggerCardHeaderLayout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="5dp"
                 android:orientation="horizontal">
 
                 <CheckedTextView
@@ -114,7 +113,7 @@
                 android:id="@+id/triggerCardContentLayout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_margin="5dp"
+                android:layout_margin="10dp"
                 android:orientation="vertical">
 
                 <CheckedTextView
@@ -122,14 +121,15 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Ringer Volume"
+                    android:text="Ring Volume"
                     android:textSize="16sp" />
 
                 <ProgressBar
                     android:id="@+id/ringerVolumePbar"
                     style="?android:attr/progressBarStyleHorizontal"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content" />
+                    android:layout_height="wrap_content"
+                    android:progressBackgroundTint="@color/red" />
 
                 <CheckedTextView
                     android:id="@+id/mediaVolumeTv"
@@ -143,7 +143,8 @@
                     android:id="@+id/mediaVolumePbar"
                     style="?android:attr/progressBarStyleHorizontal"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content" />
+                    android:layout_height="wrap_content"
+                    android:progressBackgroundTint="@color/red" />
 
                 <CheckedTextView
                     android:id="@+id/alarmVolumeTv"
@@ -157,7 +158,8 @@
                     android:id="@+id/alarmVolumePbar"
                     style="?android:attr/progressBarStyleHorizontal"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content" />
+                    android:layout_height="wrap_content"
+                    android:progressBackgroundTint="@color/red" />
 
             </androidx.appcompat.widget.LinearLayoutCompat>
 

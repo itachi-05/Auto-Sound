@@ -42,8 +42,6 @@ class TriggerCardsAdapter(private var triggers: MutableList<Trigger>) :
                 triggerDateTxt.text = trigger.triggerDateTime.toString()
                 triggerTimeTxt.text = trigger.triggerTime
                 ringerModeTxt.text = trigger.ringerMode
-                ringerVolumeTv.text = trigger.ringerVolume.toString()
-                alarmVolumeTv.text = trigger.alarmVolume.toString()
             }
         }
     }
@@ -61,8 +59,7 @@ class TriggerCardsAdapter(private var triggers: MutableList<Trigger>) :
         val adapterPosition = holder.adapterPosition
 
         val date = StringBuilder()
-        val time = StringBuilder()
-        var tTime = ""
+        val timeTobeShown = StringBuilder()
         if (trigger.isRepeat) {
             var count = 0
             for (i in trigger.daysOfWeek.indices) {
@@ -71,36 +68,10 @@ class TriggerCardsAdapter(private var triggers: MutableList<Trigger>) :
                     date.append(Utilities.getDayString(i, 3))
                 }
             }
-            val timeParts = trigger.triggerTime.split(":")
-            val hour = timeParts[0].toInt()
-            val minute = timeParts[1].substringBefore(" ").toInt()
-            val period = timeParts[1].substringAfter(" ")
-
-            val localTime = if (period.equals("AM", ignoreCase = true) && hour == 12) {
-                // Handle midnight (12 AM)
-                LocalTime.MIDNIGHT
-            } else if (period.equals("PM", ignoreCase = true) && hour < 12) {
-                // Convert PM hours to 24-hour format
-                LocalTime.of(hour + 12, minute)
-            } else {
-                // Use the provided hour and minute
-                LocalTime.of(hour, minute)
-            }
-
-            time.append(
-                localTime.format(
-                    DateTimeFormatter.ofPattern(
-                        "hh:mm a",
-                        Locale.getDefault()
-                    )
-                ).uppercase(Locale.ROOT)
-            )
-
-        }
-        else {
+        } else {
             trigger.triggerDateTime?.let { dateTime ->
-                val formatter =
-                    DateTimeFormatter.ofPattern("EEE MMM dd HH:mm:ss z yyyy", Locale.ENGLISH)
+                val pattern = "EEE MMM dd HH:mm:ss z yyyy"
+                val formatter = DateTimeFormatter.ofPattern(pattern, Locale.ENGLISH)
                 val parsedDateTime = LocalDateTime.parse(dateTime.toString(), formatter)
 
                 val dateFormatter = DateTimeFormatter.ofPattern("EEEE, MMMM", Locale.getDefault())
@@ -114,31 +85,43 @@ class TriggerCardsAdapter(private var triggers: MutableList<Trigger>) :
                     .append(", ")
                     .append(parsedDateTime.format(yearFormatter))
 
-                time.append(parsedDateTime.format(timeFormatter).uppercase(Locale.ROOT))
             }
         }
 
-        val DateD: String
-        if (trigger.isRepeat) {
-            DateD = "$date (Repeat)"
-            holder.triggerTimeExpired.text = "Upcoming"
+        // reorganizing time to be set
+        val timeParts = trigger.triggerTime.split(":")
+        val hour = timeParts[0].toInt()
+        val minute = timeParts[1].substringBefore(" ").toInt()
+        val period = timeParts[1].substringAfter(" ")
+
+        val localTime = if (period.equals("AM", ignoreCase = true) && hour == 12) {
+            // Handle midnight (12 AM)
+            LocalTime.MIDNIGHT
+        } else if (period.equals("PM", ignoreCase = true) && hour < 12) {
+            // Convert PM hours to 24-hour format
+            LocalTime.of(hour + 12, minute)
         } else {
-            val currentCalendar = Calendar.getInstance()
-            DateD = date.toString()
-            val dt = trigger.triggerDateTime
-            val dt2 = currentCalendar.time
-
-            dt?.let {
-                if (it < dt2) {
-                    holder.triggerTimeExpired.text = "Expired"
-                } else if (it >= dt2) {
-                    holder.triggerTimeExpired.text = "Upcoming"
-                }
-            }
+            // Use the provided hour and minute
+            LocalTime.of(hour, minute)
         }
-        holder.triggerDateTextView.text = DateD
-        holder.triggerTimeTextView.text = time.toString()
-        holder.ringerModeTextView.text = trigger.ringerMode.toString()
+        val dateTimeFormatter = DateTimeFormatter.ofPattern("hh:mm a", Locale.getDefault())
+        timeTobeShown.append(localTime.format(dateTimeFormatter).uppercase(Locale.ROOT))
+
+        val dateToBeShown = if (trigger.isRepeat) "$date (Repeat)" else date.toString()
+//        val currentCalendar = Calendar.getInstance()
+//        val dt = trigger.triggerDateTime
+//        val dt2 = currentCalendar.time
+//
+//        dt?.let {
+//            if (it < dt2) {
+//                holder.triggerTimeExpired.text = "Expired"
+//            } else if (it >= dt2) {
+//                holder.triggerTimeExpired.text = "Upcoming"
+//            }
+//        }
+        holder.triggerDateTextView.text = dateToBeShown
+        holder.triggerTimeTextView.text = timeTobeShown.toString()
+        holder.ringerModeTextView.text = trigger.ringerMode
 
         if (trigger.ringerMode == Constants.RingerMode.Normal.name) {
             holder.ringerVolumePBar.progress = trigger.ringerVolume
