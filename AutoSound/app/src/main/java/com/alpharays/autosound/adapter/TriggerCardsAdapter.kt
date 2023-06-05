@@ -25,6 +25,8 @@ class TriggerCardsAdapter(private var triggers: MutableList<Trigger>) :
 
     private var expandedPosition = -1
 
+    private var actionEdit: ((Trigger)->Unit)? = null
+    private var actionDelete: ((Trigger)->Unit)? = null
     inner class TriggerCardViewHolder(private val binding: AppTriggersViewBinding) :
         RecyclerView.ViewHolder(binding.root) {
         val triggerDateTextView = binding.triggerDateTxt
@@ -37,6 +39,8 @@ class TriggerCardsAdapter(private var triggers: MutableList<Trigger>) :
         val alarmVolumePBar = binding.alarmVolumePbar
         val triggerTimeExpired = binding.triggerTimeExpired
 
+        val actionEdit = binding.editTrigger
+        val actionDelete = binding.deleteTrigger
         fun bind(trigger: Trigger) {
             binding.apply {
                 triggerDateTxt.text = trigger.triggerDateTime.toString()
@@ -151,9 +155,16 @@ class TriggerCardsAdapter(private var triggers: MutableList<Trigger>) :
                 notifyDataSetChanged()
             }
         }
-
+        holder.actionEdit.setOnClickListener {actionEdit?.invoke(trigger) }
+        holder.actionDelete.setOnClickListener {actionDelete?.invoke(trigger) }
+    }
+    fun setOnActionEditListener(callback: (Trigger)->Unit){
+        this.actionEdit = callback
     }
 
+    fun setOnActionDeleteListener(callback: (Trigger) -> Unit){
+        this.actionDelete = callback
+    }
     override fun getItemCount(): Int {
         return triggers.size
     }

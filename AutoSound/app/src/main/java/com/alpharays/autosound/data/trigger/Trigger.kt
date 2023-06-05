@@ -8,6 +8,7 @@ import com.alpharays.autosound.util.Constants
 import java.util.Date
 import androidx.room.TypeConverter
 import androidx.room.TypeConverters
+import java.io.Serializable
 
 @Entity(tableName = "sound_trigger")
 @TypeConverters(DateConverter::class)
@@ -20,7 +21,7 @@ data class Trigger(
     @ColumnInfo(name = "ringer_volume") var ringerVolume: Int = 0,
     @ColumnInfo(name = "media_volume") var mediaVolume: Int = 0,
     @ColumnInfo(name = "alarm_volume") var alarmVolume: Int = 0
-) {
+): Serializable {
     @PrimaryKey(autoGenerate = true)
     var id: Long = 0
 }
