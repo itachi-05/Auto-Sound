@@ -7,11 +7,9 @@ import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.alpharays.autosound.R
 import com.alpharays.autosound.adapter.TriggerCardsAdapter
 import com.alpharays.autosound.data.trigger.Trigger
 import com.alpharays.autosound.databinding.ActivityMainBinding
-import com.alpharays.autosound.util.Constants
 import com.alpharays.autosound.viewmodel.TriggerViewModel
 import com.google.android.material.snackbar.Snackbar
 import java.time.LocalDate
@@ -83,13 +81,13 @@ class MainActivity : AppCompatActivity() {
             PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
         ) != null
 
-        if (isAlarmSet) {
-            // Alarm is already set
-            showSnackBar("YES")
-        } else {
-            // Alarm is not set
-            showSnackBar("NO")
-        }
+//        if (isAlarmSet) {
+//            // Alarm is already set
+//            showSnackBar("YES")
+//        } else {
+//            // Alarm is not set
+//            showSnackBar("NO")
+//        }
 
 
         // testing room db
@@ -97,19 +95,18 @@ class MainActivity : AppCompatActivity() {
             it?.let { allTriggers ->
                 triggersList.clear()
                 triggersList.addAll(allTriggers)
-                triggerCardsAdapter.notifyDataSetChanged()
-                for (trigger in allTriggers) {
-                    Log.i(
-                        "triggerData",
-                        "${trigger.id} ${trigger.isRepeat} ${trigger.triggerTime} ${trigger.ringerMode}"
-                    )
-                    trigger.triggerDateTime?.let { date ->
-                        Log.i("checkingTriggerDate", date.toString())
-                    }
-                }
-                triggerCardsAdapter.setOnActionEditListener {
+//                for (trigger in allTriggers) {
+//                    Log.i(
+//                        "triggerData",
+//                        "${trigger.id} ${trigger.isRepeat} ${trigger.triggerTime} ${trigger.ringerMode}"
+//                    )
+//                    trigger.triggerDateTime?.let { date ->
+//                        Log.i("checkingTriggerDate", date.toString())
+//                    }
+//                }
+                triggerCardsAdapter.setOnActionEditListener { trigger ->
                     val intent = Intent(this, AddTriggerActivity::class.java)
-                    intent.putExtra("Data",it)
+                    intent.putExtra("Data",trigger)
                     startActivity(intent)
                 }
                 triggerCardsAdapter.setOnActionDeleteListener {
@@ -118,6 +115,7 @@ class MainActivity : AppCompatActivity() {
                     //builder.setPositiveButton("YES",DialogInterface.OnClickListener())
 
                 }
+                triggerCardsAdapter.notifyDataSetChanged()
             }
         }
 

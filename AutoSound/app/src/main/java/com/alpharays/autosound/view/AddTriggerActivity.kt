@@ -1,5 +1,6 @@
 package com.alpharays.autosound.view
 
+import android.app.AlarmManager
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
@@ -23,6 +24,7 @@ import com.google.android.material.datepicker.MaterialDatePicker
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.timepicker.MaterialTimePicker
 import com.google.android.material.timepicker.TimeFormat
+import java.util.Calendar
 import java.util.Date
 import kotlin.collections.ArrayList
 
@@ -34,6 +36,7 @@ class AddTriggerActivity : AppCompatActivity() {
     private var numberOfCheckBoxesChecked = 0
     private var timeSelected = ""
     private var dateSelected: Date? = null
+    private var updatedTriggerId: Long = -1
     private var ringerVolumeSelected = 0
     private var mediaVolumeSelected = 0
     private var alarmVolumeSelected = 0
@@ -48,7 +51,7 @@ class AddTriggerActivity : AppCompatActivity() {
     private val triggerViewModel: TriggerViewModel by lazy { ViewModelProvider(this)[TriggerViewModel::class.java] }
     private val triggerInstanceViewModel: TriggerInstanceViewModel by lazy { ViewModelProvider(this)[TriggerInstanceViewModel::class.java] }
 
-    private var doUpdate:Trigger? = null                //check if we need to add or update
+    private var doUpdate: Trigger? = null                //check if we need to add or update
 
 
     /*
@@ -74,12 +77,19 @@ class AddTriggerActivity : AppCompatActivity() {
         //check if we need to update or create new
         //if update, then it stores the old values
         doUpdate = intent.getSerializableExtra("Data") as? Trigger
-        if(doUpdate==null)
+        if (doUpdate == null)
             binding.createTrigger.text = "Create"
         else {
-            binding.createTrigger.text = "Update"
-            binding.chooseDateBtn.text = doUpdate?.triggerDateTime.toString()
-            binding.chooseTimeBtn.text = doUpdate?.triggerTime
+            doUpdate?.let {
+                updatedTriggerId = it.id
+                binding.createTrigger.text = "Update"
+                binding.chooseDateBtn.text = it.triggerDateTime.toString()
+                binding.chooseTimeBtn.text = it.triggerTime
+                binding.ringerVolumeLL.visibility = View.VISIBLE
+                binding.ringerVolumeSeekBar.progress = it.ringerVolume
+                binding.alarmVolumeSeekBar.progress = it.alarmVolume
+                binding.mediaVolumeSeekBar.progress = it.mediaVolume
+            }
             //binding.ringerVolumeSeekBar = doUpdate?.triggerTime
             //update seekbars
         }
@@ -230,7 +240,7 @@ class AddTriggerActivity : AppCompatActivity() {
 
         // 8th layout : create trigger button
         binding.createTrigger.setOnClickListener {
-           if(doUpdate==null) {
+            if (doUpdate == null) {
                 if (isRepeatTriggerCheck) {
                     if (numberOfCheckBoxesChecked == 0) {
                         showSnackBar("Select days to create Trigger")
@@ -283,23 +293,22 @@ class AddTriggerActivity : AppCompatActivity() {
                         showSnackBar("Something went wrong")
                     }
                 }
+            } else {
+                val trigger = Trigger(
+                    false,
+                    "",
+                    timeSelected,
+                    dateSelected,
+                    ringerModeSelected,
+                    ringerVolumeSelected,
+                    mediaVolumeSelected,
+                    alarmVolumeSelected
+                )
+                trigger.id = updatedTriggerId
+                triggerViewModel.updateTrigger(trigger)
+                showSnackBar("Trigger Updated")
+                exitScreen()
             }
-            else{
-               val trigger = Trigger(
-                   false,
-                   "",
-                   timeSelected+" updated",
-                   dateSelected,
-                   ringerModeSelected,
-                   ringerVolumeSelected,
-                   mediaVolumeSelected,
-                   alarmVolumeSelected
-               )
-               trigger.id = doUpdate?.id ?: 0
-               triggerViewModel.createTrigger(trigger)
-               showSnackBar("Trigger Created")
-               exitScreen()
-           }
         }
 
 

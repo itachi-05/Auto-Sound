@@ -27,6 +27,10 @@ class TriggerViewModel(application: Application) : AndroidViewModel(application)
         repo.createTrigger(trigger)
     }
 
+    fun updateTrigger(trigger: Trigger) = viewModelScope.launch(Dispatchers.IO) {
+        repo.updateTrigger(trigger)
+    }
+
     fun deleteTrigger(trigger: Trigger) = viewModelScope.launch(Dispatchers.IO) {
         repo.deleteTrigger(trigger)
     }

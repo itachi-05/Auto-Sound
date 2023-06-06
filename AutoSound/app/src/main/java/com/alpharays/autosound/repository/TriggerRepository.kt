@@ -12,6 +12,20 @@ class TriggerRepository(private val triggerDao: TriggerDao) {
         triggerDao.createTrigger(trigger)
     }
 
+    suspend fun updateTrigger(trigger: Trigger) {
+        triggerDao.updateTrigger(
+            trigger.id,
+            trigger.isRepeat,
+            trigger.daysOfWeek,
+            trigger.triggerTime,
+            trigger.triggerDateTime,
+            trigger.ringerMode,
+            trigger.ringerVolume,
+            trigger.mediaVolume,
+            trigger.alarmVolume
+        )
+    }
+
     suspend fun deleteTrigger(trigger: Trigger) {
         triggerDao.deleteTrigger(trigger)
     }
