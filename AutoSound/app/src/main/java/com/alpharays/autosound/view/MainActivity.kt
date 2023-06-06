@@ -4,7 +4,6 @@ import android.app.PendingIntent
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -108,6 +107,17 @@ class MainActivity : AppCompatActivity() {
                         Log.i("checkingTriggerDate", date.toString())
                     }
                 }
+                triggerCardsAdapter.setOnActionEditListener {
+                    val intent = Intent(this, AddTriggerActivity::class.java)
+                    intent.putExtra("Data",it)
+                    startActivity(intent)
+                }
+                triggerCardsAdapter.setOnActionDeleteListener {
+                    //val builder = AlertDialog.Builder(this)
+                    //builder.setMessage("Are you sure?")
+                    //builder.setPositiveButton("YES",DialogInterface.OnClickListener())
+
+                }
             }
         }
 
@@ -121,4 +131,8 @@ class MainActivity : AppCompatActivity() {
     private fun showSnackBar(message: String) {
         Snackbar.make(binding.root, message, Snackbar.LENGTH_SHORT).show()
     }
+}
+// the following block was created to suppress an error
+private fun Intent.putExtra(s: String, it: Trigger) {
+
 }

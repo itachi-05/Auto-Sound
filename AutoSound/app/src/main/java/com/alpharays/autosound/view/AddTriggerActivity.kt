@@ -1,6 +1,5 @@
 package com.alpharays.autosound.view
 
-import android.app.AlarmManager
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
@@ -14,7 +13,6 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModelProvider
 import com.alpharays.autosound.R
 import com.alpharays.autosound.data.trigger.Trigger
-import com.alpharays.autosound.data.trigger_instance.TriggerInstance
 import com.alpharays.autosound.databinding.ActivityAddTriggerBinding
 import com.alpharays.autosound.util.AlarmManagerHandler
 import com.alpharays.autosound.util.Constants
@@ -25,8 +23,8 @@ import com.google.android.material.datepicker.MaterialDatePicker
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.timepicker.MaterialTimePicker
 import com.google.android.material.timepicker.TimeFormat
-import java.util.Calendar
 import java.util.Date
+import kotlin.collections.ArrayList
 
 class AddTriggerActivity : AppCompatActivity() {
     private lateinit var binding: ActivityAddTriggerBinding
@@ -50,6 +48,9 @@ class AddTriggerActivity : AppCompatActivity() {
     private val triggerViewModel: TriggerViewModel by lazy { ViewModelProvider(this)[TriggerViewModel::class.java] }
     private val triggerInstanceViewModel: TriggerInstanceViewModel by lazy { ViewModelProvider(this)[TriggerInstanceViewModel::class.java] }
 
+    private var doUpdate:Trigger? = null                //check if we need to add or update
+
+
     /*
     Required items to create a Trigger:
     1) if isRepeat: not need to select data : else need to select
@@ -70,6 +71,18 @@ class AddTriggerActivity : AppCompatActivity() {
         }
 
 
+        //check if we need to update or create new
+        //if update, then it stores the old values
+        doUpdate = intent.getSerializableExtra("Data") as? Trigger
+        if(doUpdate==null)
+            binding.createTrigger.text = "Create"
+        else {
+            binding.createTrigger.text = "Update"
+            binding.chooseDateBtn.text = doUpdate?.triggerDateTime.toString()
+            binding.chooseTimeBtn.text = doUpdate?.triggerTime
+            //binding.ringerVolumeSeekBar = doUpdate?.triggerTime
+            //update seekbars
+        }
         for (i in 0..6) daysSelected.add(0)
 
         checkBoxes = arrayOf(
@@ -217,66 +230,76 @@ class AddTriggerActivity : AppCompatActivity() {
 
         // 8th layout : create trigger button
         binding.createTrigger.setOnClickListener {
-            if (isRepeatTriggerCheck) {
-                if (numberOfCheckBoxesChecked == 0) {
-                    showSnackBar("Select days to create Trigger")
-                }
-                else if(timeSelected=="" || timeSelected.isEmpty()){
-                    showSnackBar("Select time to create Trigger")
-                }
-                else if (timeSelected != "" && timeSelected.isNotEmpty()) {
-                    var daysOfWeek = ""
-                    for (days in daysSelected.indices) daysOfWeek += daysSelected[days].toString()
-                    val trigger = Trigger(
-                        true,
-                        daysOfWeek,
-                        timeSelected,
-                        null,
-                        ringerModeSelected,
-                        ringerVolumeSelected,
-                        mediaVolumeSelected,
-                        alarmVolumeSelected
-                    )
-                    triggerViewModel.createTrigger(trigger)
-                    val triggerInstance = TriggerInstance(trigger.id)
-                    triggerInstanceViewModel.createTriggerInstance(triggerInstance)
-                    alarmManagerHandler?.setAlarm(triggerInstance.id.toInt(),trigger)
-                    showSnackBar("Trigger Created")
-                    exitScreen()
-                } else {
-                    showSnackBar("Select time to create Trigger")
-                }
-            } else {
-                if (dateSelected == null) {
-                    showSnackBar("Select date to create Trigger")
-                } else if (timeSelected == "" || timeSelected.isEmpty()) {
-                    showSnackBar("Select time to create Trigger")
-                } else if (timeSelected != "" && timeSelected.isNotEmpty() && dateSelected != null) {
-                    val trigger = Trigger(
-                        false,
-                        "",
-                        timeSelected,
-                        dateSelected,
-                        ringerModeSelected,
-                        ringerVolumeSelected,
-                        mediaVolumeSelected,
-                        alarmVolumeSelected
-                    )
-                    triggerViewModel.createTrigger(trigger)
-                    val triggerInstance = TriggerInstance(trigger.id)
-                    triggerInstanceViewModel.createTriggerInstance(triggerInstance)
-                    alarmManagerHandler?.setAlarm(triggerInstance.id.toInt(),trigger)
-                    showSnackBar("Trigger Created")
-                    exitScreen()
-                } else {
-                    try {
-                        showSnackBar("triggerError#1: $isRepeatTriggerCheck : $numberOfCheckBoxesChecked : $timeSelected : $dateSelected : $ringerModeSelected : $ringerVolumeSelected : $mediaVolumeSelected : $alarmVolumeSelected")
-                    } catch (e: Exception) {
-                        Log.i("exceptionTrigger$1", e.message.toString())
+           if(doUpdate==null) {
+                if (isRepeatTriggerCheck) {
+                    if (numberOfCheckBoxesChecked == 0) {
+                        showSnackBar("Select days to create Trigger")
+                    } else if (timeSelected == "" || timeSelected.isEmpty()) {
+                        showSnackBar("Select time to create Trigger")
+                    } else if (timeSelected != "" && timeSelected.isNotEmpty()) {
+                        var daysOfWeek = ""
+                        for (days in daysSelected.indices) daysOfWeek += daysSelected[days].toString()
+                        val trigger = Trigger(
+                            true,
+                            daysOfWeek,
+                            timeSelected,
+                            null,
+                            ringerModeSelected,
+                            ringerVolumeSelected,
+                            mediaVolumeSelected,
+                            alarmVolumeSelected
+                        )
+                        triggerViewModel.createTrigger(trigger)
+                        showSnackBar("Trigger Created")
+                        exitScreen()
+                    } else {
+                        showSnackBar("Select time to create Trigger")
                     }
-                    showSnackBar("Something went wrong")
+                } else {
+                    if (dateSelected == null) {
+                        showSnackBar("Select date to create Trigger")
+                    } else if (timeSelected == "" || timeSelected.isEmpty()) {
+                        showSnackBar("Select time to create Trigger")
+                    } else if (timeSelected != "" && timeSelected.isNotEmpty() && dateSelected != null) {
+                        val trigger = Trigger(
+                            false,
+                            "",
+                            timeSelected,
+                            dateSelected,
+                            ringerModeSelected,
+                            ringerVolumeSelected,
+                            mediaVolumeSelected,
+                            alarmVolumeSelected
+                        )
+                        triggerViewModel.createTrigger(trigger)
+                        showSnackBar("Trigger Created")
+                        exitScreen()
+                    } else {
+                        try {
+                            showSnackBar("triggerError#1: $isRepeatTriggerCheck : $numberOfCheckBoxesChecked : $timeSelected : $dateSelected : $ringerModeSelected : $ringerVolumeSelected : $mediaVolumeSelected : $alarmVolumeSelected")
+                        } catch (e: Exception) {
+                            Log.i("exceptionTrigger$1", e.message.toString())
+                        }
+                        showSnackBar("Something went wrong")
+                    }
                 }
             }
+            else{
+               val trigger = Trigger(
+                   false,
+                   "",
+                   timeSelected+" updated",
+                   dateSelected,
+                   ringerModeSelected,
+                   ringerVolumeSelected,
+                   mediaVolumeSelected,
+                   alarmVolumeSelected
+               )
+               trigger.id = doUpdate?.id ?: 0
+               triggerViewModel.createTrigger(trigger)
+               showSnackBar("Trigger Created")
+               exitScreen()
+           }
         }
 
 
