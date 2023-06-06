@@ -6,11 +6,14 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.alpharays.autosound.data.trigger.Trigger
 import com.alpharays.autosound.data.trigger.TriggerDao
+import com.alpharays.autosound.data.trigger_instance.TriggerInstance
+import com.alpharays.autosound.data.trigger_instance.TriggerInstanceDao
 
-@Database(entities = [Trigger::class], version = 1, exportSchema = false)
+@Database(entities = [Trigger::class, TriggerInstance::class], version = 1, exportSchema = false)
 abstract class TriggerDatabase : RoomDatabase() {
 
     abstract fun triggerDao(): TriggerDao
+    abstract fun triggerInstanceDao(): TriggerInstanceDao
 
     companion object {
         @Volatile

@@ -1,5 +1,7 @@
 package com.alpharays.autosound.view
 
+import android.app.AlarmManager
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
@@ -12,21 +14,25 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModelProvider
 import com.alpharays.autosound.R
 import com.alpharays.autosound.data.trigger.Trigger
+import com.alpharays.autosound.data.trigger_instance.TriggerInstance
 import com.alpharays.autosound.databinding.ActivityAddTriggerBinding
+import com.alpharays.autosound.util.AlarmManagerHandler
 import com.alpharays.autosound.util.Constants
 import com.alpharays.autosound.util.Utilities
+import com.alpharays.autosound.viewmodel.TriggerInstanceViewModel
 import com.alpharays.autosound.viewmodel.TriggerViewModel
 import com.google.android.material.datepicker.MaterialDatePicker
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.timepicker.MaterialTimePicker
 import com.google.android.material.timepicker.TimeFormat
+import java.util.Calendar
 import java.util.Date
-import kotlin.collections.ArrayList
 
 class AddTriggerActivity : AppCompatActivity() {
     private lateinit var binding: ActivityAddTriggerBinding
     private var isExiting = false
     private lateinit var checkBoxes: Array<CheckBox>
+    private var alarmManagerHandler: AlarmManagerHandler? = null
     private var numberOfCheckBoxesChecked = 0
     private var timeSelected = ""
     private var dateSelected: Date? = null
@@ -42,6 +48,7 @@ class AddTriggerActivity : AppCompatActivity() {
     private var ringerModeObserver: MutableLiveData<String> =
         MutableLiveData(Utilities.ringerModes[0])
     private val triggerViewModel: TriggerViewModel by lazy { ViewModelProvider(this)[TriggerViewModel::class.java] }
+    private val triggerInstanceViewModel: TriggerInstanceViewModel by lazy { ViewModelProvider(this)[TriggerInstanceViewModel::class.java] }
 
     /*
     Required items to create a Trigger:
@@ -54,6 +61,14 @@ class AddTriggerActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityAddTriggerBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+
+        //TODO: Load saved data if any present
+        if (alarmManagerHandler == null) {
+            val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+            alarmManagerHandler = AlarmManagerHandler(this, alarmManager, Calendar.getInstance())
+        }
+
 
         for (i in 0..6) daysSelected.add(0)
 
@@ -223,6 +238,9 @@ class AddTriggerActivity : AppCompatActivity() {
                         alarmVolumeSelected
                     )
                     triggerViewModel.createTrigger(trigger)
+                    val triggerInstance = TriggerInstance(trigger.id)
+                    triggerInstanceViewModel.createTriggerInstance(triggerInstance)
+                    alarmManagerHandler?.setAlarm(triggerInstance.id.toInt(),trigger)
                     showSnackBar("Trigger Created")
                     exitScreen()
                 } else {
@@ -245,6 +263,9 @@ class AddTriggerActivity : AppCompatActivity() {
                         alarmVolumeSelected
                     )
                     triggerViewModel.createTrigger(trigger)
+                    val triggerInstance = TriggerInstance(trigger.id)
+                    triggerInstanceViewModel.createTriggerInstance(triggerInstance)
+                    alarmManagerHandler?.setAlarm(triggerInstance.id.toInt(),trigger)
                     showSnackBar("Trigger Created")
                     exitScreen()
                 } else {

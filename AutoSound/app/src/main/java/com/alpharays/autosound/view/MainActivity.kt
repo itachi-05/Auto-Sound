@@ -1,8 +1,10 @@
 package com.alpharays.autosound.view
 
+import android.app.PendingIntent
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -75,6 +77,21 @@ class MainActivity : AppCompatActivity() {
 //        triggerViewModel.createTrigger(trigger4)
 //        triggerViewModel.createTrigger(trigger5)
 
+        val isAlarmSet = PendingIntent.getBroadcast(
+            this,
+            0,
+            intent,
+            PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+        ) != null
+
+        if (isAlarmSet) {
+            // Alarm is already set
+            showSnackBar("YES")
+        } else {
+            // Alarm is not set
+            showSnackBar("NO")
+        }
+
 
         // testing room db
         triggerViewModel.allTriggers.observe(this) {
@@ -87,8 +104,8 @@ class MainActivity : AppCompatActivity() {
                         "triggerData",
                         "${trigger.id} ${trigger.isRepeat} ${trigger.triggerTime} ${trigger.ringerMode}"
                     )
-                    trigger.triggerDateTime?.let {  date ->
-                        Log.i("checkingTriggerDate",date.toString())
+                    trigger.triggerDateTime?.let { date ->
+                        Log.i("checkingTriggerDate", date.toString())
                     }
                 }
             }

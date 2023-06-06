@@ -12,7 +12,7 @@ interface TriggerInstanceDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun createTrigger(trigger: TriggerInstance)
 
-    @Query("SELECT * FROM sound_trigger")
+    @Query("SELECT * FROM sound_trigger_instance")
     fun getAllTriggers(): LiveData<List<TriggerInstance>>
 
     @Delete
