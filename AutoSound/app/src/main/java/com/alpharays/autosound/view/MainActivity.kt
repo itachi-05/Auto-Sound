@@ -109,11 +109,11 @@ class MainActivity : AppCompatActivity() {
                     intent.putExtra("Data",trigger)
                     startActivity(intent)
                 }
-                triggerCardsAdapter.setOnActionDeleteListener {
+                triggerCardsAdapter.setOnActionDeleteListener { trigger ->
                     //val builder = AlertDialog.Builder(this)
                     //builder.setMessage("Are you sure?")
                     //builder.setPositiveButton("YES",DialogInterface.OnClickListener())
-
+                    triggerViewModel.deleteTrigger(trigger)
                 }
                 triggerCardsAdapter.notifyDataSetChanged()
             }
@@ -131,6 +131,6 @@ class MainActivity : AppCompatActivity() {
     }
 }
 // the following block was created to suppress an error
-private fun Intent.putExtra(s: String, it: Trigger) {
+//private fun Intent.putExtra(s: String, it: Trigger) {
 
-}
+//}
