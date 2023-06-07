@@ -21,7 +21,7 @@ data class Trigger(
     @ColumnInfo(name = "ringer_volume") var ringerVolume: Int = 0,
     @ColumnInfo(name = "media_volume") var mediaVolume: Int = 0,
     @ColumnInfo(name = "alarm_volume") var alarmVolume: Int = 0
-): Serializable {
+) : Serializable {
     @PrimaryKey(autoGenerate = true)
     var id: Long = 0
 }

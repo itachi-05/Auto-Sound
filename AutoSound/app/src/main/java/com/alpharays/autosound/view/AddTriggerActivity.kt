@@ -35,6 +35,8 @@ class AddTriggerActivity : AppCompatActivity() {
     private var alarmManagerHandler: AlarmManagerHandler? = null
     private var numberOfCheckBoxesChecked = 0
     private var timeSelected = ""
+    private var daysOfWeek = ""
+    private var ringerModeSelectedFromUpdate = ""
     private var dateSelected: Date? = null
     private var updatedTriggerId: Long = -1
     private var ringerVolumeSelected = 0
@@ -51,7 +53,7 @@ class AddTriggerActivity : AppCompatActivity() {
     private val triggerViewModel: TriggerViewModel by lazy { ViewModelProvider(this)[TriggerViewModel::class.java] }
     private val triggerInstanceViewModel: TriggerInstanceViewModel by lazy { ViewModelProvider(this)[TriggerInstanceViewModel::class.java] }
 
-    private var doUpdate: Trigger? = null                //check if we need to add or update
+    private var doUpdate: Trigger? = null                // check if we need to add or update
 
 
     /*
@@ -88,6 +90,20 @@ class AddTriggerActivity : AppCompatActivity() {
                 binding.ringerVolumeSeekBar.progress = it.ringerVolume
                 binding.alarmVolumeSeekBar.progress = it.alarmVolume
                 binding.mediaVolumeSeekBar.progress = it.mediaVolume
+                binding.autoCompleteRingerMode.setText(it.ringerMode, false)
+                // storing the details from doUpdate
+                timeSelected = it.triggerTime
+                dateSelected = it.triggerDateTime
+                ringerVolumeSelected = it.ringerVolume
+                mediaVolumeSelected = it.mediaVolume
+                alarmVolumeSelected = it.alarmVolume
+                isRepeatTriggerCheck = it.isRepeat
+                var updateDaysOfWeek = ""
+                for (days in it.daysOfWeek.indices) updateDaysOfWeek += it.daysOfWeek[days].toString()
+                daysOfWeek = updateDaysOfWeek
+                ringerModeSelectedFromUpdate = it.ringerMode
+                ringerModeSelected = it.ringerMode
+                ringerModeObserver.postValue(it.ringerMode)
             }
             //binding.ringerVolumeSeekBar = doUpdate?.triggerTime
             //update seekbars
@@ -151,7 +167,10 @@ class AddTriggerActivity : AppCompatActivity() {
         // 4th layout : ringer modes
         val adapter = ArrayAdapter(this, R.layout.ringer_modes_item, Utilities.ringerModes)
         binding.autoCompleteRingerMode.setAdapter(adapter)
-        binding.autoCompleteRingerMode.setText(Constants.RingerMode.Normal.name, false)
+        if (ringerModeSelectedFromUpdate.isEmpty() || ringerModeSelectedFromUpdate == "") {
+            ringerModeSelectedFromUpdate = Constants.RingerMode.Normal.name
+        }
+        binding.autoCompleteRingerMode.setText(ringerModeSelectedFromUpdate, false)
         binding.autoCompleteRingerMode.setOnItemClickListener { parent, view, position, id ->
             val selectedItem = parent.getItemAtPosition(position).toString()
             // Convert the selected item string to the corresponding RingerMode enum value
@@ -165,11 +184,12 @@ class AddTriggerActivity : AppCompatActivity() {
             it?.let { ringerMode ->
                 if (ringerMode == Utilities.ringerModes[0]) {
                     binding.ringerVolumeLL.visibility = View.VISIBLE
+                    binding.ringerVolumeSeekBar.progress = ringerVolumeSelected
                 } else {
                     binding.ringerVolumeLL.visibility = View.GONE
+                    binding.ringerVolumeSeekBar.progress = 0
+                    ringerVolumeSelected = 0
                 }
-                binding.ringerVolumeSeekBar.progress = 0
-                ringerVolumeSelected = 0
             }
         }
 
@@ -246,7 +266,7 @@ class AddTriggerActivity : AppCompatActivity() {
                     } else if (timeSelected == "" || timeSelected.isEmpty()) {
                         showSnackBar("Select time to create Trigger")
                     } else if (timeSelected != "" && timeSelected.isNotEmpty()) {
-                        var daysOfWeek = ""
+                        daysOfWeek = ""
                         for (days in daysSelected.indices) daysOfWeek += daysSelected[days].toString()
                         val trigger = Trigger(
                             true,
@@ -305,7 +325,7 @@ class AddTriggerActivity : AppCompatActivity() {
             } else {
                 val trigger = Trigger(
                     false,
-                    "",
+                    daysOfWeek,
                     timeSelected,
                     dateSelected,
                     ringerModeSelected,
