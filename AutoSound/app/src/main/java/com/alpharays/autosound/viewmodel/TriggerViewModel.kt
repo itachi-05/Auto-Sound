@@ -23,8 +23,9 @@ class TriggerViewModel(application: Application) : AndroidViewModel(application)
         allTriggers = repo.triggers
     }
 
-    fun createTrigger(trigger: Trigger) = viewModelScope.launch(Dispatchers.IO) {
+    fun createTrigger(trigger: Trigger,  callback: () -> Unit) = viewModelScope.launch(Dispatchers.IO) {
         repo.createTrigger(trigger)
+        callback.invoke()
     }
 
     fun updateTrigger(trigger: Trigger) = viewModelScope.launch(Dispatchers.IO) {

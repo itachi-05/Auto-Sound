@@ -1,17 +1,25 @@
 package com.alpharays.autosound.view
 
+import android.Manifest
+import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Intent
 import android.os.Bundle
+import android.provider.Settings
 import android.util.Log
+import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.alpharays.autosound.adapter.TriggerCardsAdapter
 import com.alpharays.autosound.data.trigger.Trigger
 import com.alpharays.autosound.databinding.ActivityMainBinding
+import com.alpharays.autosound.util.Constants
+import com.alpharays.autosound.util.TrackingUtility
 import com.alpharays.autosound.viewmodel.TriggerViewModel
 import com.google.android.material.snackbar.Snackbar
+import pub.devrel.easypermissions.EasyPermissions
 import java.time.LocalDate
 import java.time.ZoneId
 import java.util.Date
@@ -22,11 +30,23 @@ class MainActivity : AppCompatActivity() {
     private val triggerViewModel: TriggerViewModel by lazy { ViewModelProvider(this)[TriggerViewModel::class.java] }
     private lateinit var triggerCardsAdapter: TriggerCardsAdapter
     private val triggersList: MutableList<Trigger> = ArrayList()
+    private var isExecutedOnResume = false
+    private lateinit var notificationManager: NotificationManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+//        notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+//        if(!notificationManager.isNotificationPolicyAccessGranted){
+//            requestPermissions()
+//        }
+
+//        if(!isExecutedOnResume){
+//            isExecutedOnResume = true
+//            requestPermissions()
+//        }
 
 //        val date = getCurrentLocalDate()
 //        val trigger1 =
@@ -74,20 +94,22 @@ class MainActivity : AppCompatActivity() {
 //        triggerViewModel.createTrigger(trigger4)
 //        triggerViewModel.createTrigger(trigger5)
 
-        val isAlarmSet = PendingIntent.getBroadcast(
-            this,
-            0,
-            intent,
-            PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
-        ) != null
+        for (i in 0..20) {
+            val isAlarmSet = PendingIntent.getBroadcast(
+                this,
+                i,
+                intent,
+                PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+            ) != null
 
-//        if (isAlarmSet) {
-//            // Alarm is already set
-//            showSnackBar("YES")
-//        } else {
-//            // Alarm is not set
-//            showSnackBar("NO")
-//        }
+            if (isAlarmSet) {
+                // Alarm is already set
+                Log.i("test#0$i", "YES")
+            } else {
+                // Alarm is not set
+                Log.i("test#0$i", "NO")
+            }
+        }
 
 
         // testing room db
@@ -100,13 +122,10 @@ class MainActivity : AppCompatActivity() {
 //                        "triggerData",
 //                        "${trigger.id} ${trigger.isRepeat} ${trigger.triggerTime} ${trigger.ringerMode}"
 //                    )
-//                    trigger.triggerDateTime?.let { date ->
-//                        Log.i("checkingTriggerDate", date.toString())
-//                    }
 //                }
                 triggerCardsAdapter.setOnActionEditListener { trigger ->
                     val intent = Intent(this, AddTriggerActivity::class.java)
-                    intent.putExtra("Data",trigger)
+                    intent.putExtra("Data", trigger)
                     startActivity(intent)
                 }
                 triggerCardsAdapter.setOnActionDeleteListener {
@@ -118,7 +137,14 @@ class MainActivity : AppCompatActivity() {
                 triggerCardsAdapter.notifyDataSetChanged()
             }
         }
+    }
 
+    override fun onResume() {
+        super.onResume()
+        notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+        if (!notificationManager.isNotificationPolicyAccessGranted) {
+            showDialog()
+        }
     }
 
     private fun getCurrentLocalDate(): Date {
@@ -129,7 +155,27 @@ class MainActivity : AppCompatActivity() {
     private fun showSnackBar(message: String) {
         Snackbar.make(binding.root, message, Snackbar.LENGTH_SHORT).show()
     }
+
+
+    // new permission handling:
+    private fun showDialog() {
+        val builder = AlertDialog.Builder(this)
+        builder.setTitle("Permission Required")
+        builder.setMessage("You need to accept Do Not Disturb permission to use this app.")
+        builder.setPositiveButton("OK") { dialog, which ->
+            val intent = Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)
+            startActivity(intent)
+        }
+        builder.setNegativeButton("Cancel") { dialog, which ->
+            // handle what happens when user presses cancel, you may want to call showDialog() again to persist the dialog
+            showDialog()
+        }
+        builder.setCancelable(false) // This prevents the user from dismissing the dialog by pressing back button
+        builder.show()
+    }
+
 }
+
 // the following block was created to suppress an error
 private fun Intent.putExtra(s: String, it: Trigger) {
 

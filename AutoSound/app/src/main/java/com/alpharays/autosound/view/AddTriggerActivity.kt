@@ -14,6 +14,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModelProvider
 import com.alpharays.autosound.R
 import com.alpharays.autosound.data.trigger.Trigger
+import com.alpharays.autosound.data.trigger_instance.TriggerInstance
 import com.alpharays.autosound.databinding.ActivityAddTriggerBinding
 import com.alpharays.autosound.util.AlarmManagerHandler
 import com.alpharays.autosound.util.Constants
@@ -26,7 +27,6 @@ import com.google.android.material.timepicker.MaterialTimePicker
 import com.google.android.material.timepicker.TimeFormat
 import java.util.Calendar
 import java.util.Date
-import kotlin.collections.ArrayList
 
 class AddTriggerActivity : AppCompatActivity() {
     private lateinit var binding: ActivityAddTriggerBinding
@@ -67,10 +67,9 @@ class AddTriggerActivity : AppCompatActivity() {
         setContentView(binding.root)
 
 
-        //TODO: Load saved data if any present
         if (alarmManagerHandler == null) {
             val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
-            alarmManagerHandler = AlarmManagerHandler(this, alarmManager, Calendar.getInstance())
+            alarmManagerHandler = AlarmManagerHandler(this, alarmManager)
         }
 
 
@@ -259,7 +258,12 @@ class AddTriggerActivity : AppCompatActivity() {
                             mediaVolumeSelected,
                             alarmVolumeSelected
                         )
-                        triggerViewModel.createTrigger(trigger)
+                        triggerViewModel.createTrigger(trigger) {
+                            val triggerInstance = TriggerInstance(trigger.id)
+                            triggerInstanceViewModel.createTriggerInstance(triggerInstance)
+                            // set alarm for a new trigger
+                            alarmManagerHandler?.setAlarm(trigger.id.toInt(), trigger)
+                        }
                         showSnackBar("Trigger Created")
                         exitScreen()
                     } else {
@@ -281,7 +285,12 @@ class AddTriggerActivity : AppCompatActivity() {
                             mediaVolumeSelected,
                             alarmVolumeSelected
                         )
-                        triggerViewModel.createTrigger(trigger)
+                        triggerViewModel.createTrigger(trigger) {
+                            val triggerInstance = TriggerInstance(trigger.id)
+                            triggerInstanceViewModel.createTriggerInstance(triggerInstance)
+                            // set alarm for a new trigger
+                            alarmManagerHandler?.setAlarm(trigger.id.toInt(), trigger)
+                        }
                         showSnackBar("Trigger Created")
                         exitScreen()
                     } else {
@@ -344,9 +353,15 @@ class AddTriggerActivity : AppCompatActivity() {
         }
 
         // Time Picker
+        val calendar = Calendar.getInstance()
+        val currentHour = calendar.get(Calendar.HOUR_OF_DAY)
+        val currentMinute = calendar.get(Calendar.MINUTE)
+
         val timeBuilder = MaterialTimePicker.Builder()
             .setTimeFormat(TimeFormat.CLOCK_12H)
             .setTitleText("Select Time")
+            .setHour(currentHour)
+            .setMinute(currentMinute)
             .build()
 
         timePicker = timeBuilder
