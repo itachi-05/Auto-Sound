@@ -25,8 +25,11 @@ import com.google.android.material.datepicker.MaterialDatePicker
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.timepicker.MaterialTimePicker
 import com.google.android.material.timepicker.TimeFormat
+import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
+import java.util.Locale
+
 
 class AddTriggerActivity : AppCompatActivity() {
     private lateinit var binding: ActivityAddTriggerBinding
@@ -84,7 +87,9 @@ class AddTriggerActivity : AppCompatActivity() {
             doUpdate?.let {
                 updatedTriggerId = it.id
                 binding.createTrigger.text = "Update"
-                binding.chooseDateBtn.text = it.triggerDateTime.toString()
+                val dateFormat = SimpleDateFormat("dd MMM yyyy")
+                val upDate = dateFormat.format(it.triggerDateTime).toString()
+                binding.chooseDateBtn.text = upDate
                 binding.chooseTimeBtn.text = it.triggerTime
                 binding.ringerVolumeLL.visibility = View.VISIBLE
                 binding.ringerVolumeSeekBar.progress = it.ringerVolume

@@ -129,10 +129,8 @@ class MainActivity : AppCompatActivity() {
                     startActivity(intent)
                 }
                 triggerCardsAdapter.setOnActionDeleteListener { trigger ->
-                    //val builder = AlertDialog.Builder(this)
-                    //builder.setMessage("Are you sure?")
-                    //builder.setPositiveButton("YES",DialogInterface.OnClickListener())
                     triggerViewModel.deleteTrigger(trigger)
+                    //confirmDelete(trigger)
                 }
                 triggerCardsAdapter.notifyDataSetChanged()
             }
@@ -172,6 +170,17 @@ class MainActivity : AppCompatActivity() {
         }
         builder.setCancelable(false) // This prevents the user from dismissing the dialog by pressing back button
         builder.show()
+    }
+    fun confirmDelete(trigger:Trigger){
+        val deleteAlert = AlertDialog.Builder(this)
+        deleteAlert.setTitle("Delete")
+        deleteAlert.setMessage("Are you sure?")
+        deleteAlert.setPositiveButton("YES") { _, _ ->
+            triggerViewModel.deleteTrigger(trigger)
+        }
+        deleteAlert.setNegativeButton("NO") { dialog, _ ->
+            dialog.dismiss()
+        }
     }
 
 }
