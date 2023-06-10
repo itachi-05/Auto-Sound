@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.content.Intent
 import android.content.SharedPreferences
 import android.location.LocationManager
+import android.content.Context
 import android.os.Bundle
 import android.provider.Settings
 import android.util.Log
@@ -23,11 +24,14 @@ import com.alpharays.autosound.databinding.ActivityMainBinding
 import com.alpharays.autosound.util.TrackingUtility
 import com.alpharays.autosound.viewmodel.LocationViewModel
 import com.alpharays.autosound.viewmodel.TriggerViewModel
+import com.getkeepsafe.taptargetview.TapTarget
+import com.getkeepsafe.taptargetview.TapTargetView
+import com.google.android.material.snackbar.Snackbar
 import com.google.android.libraries.places.api.net.PlacesClient
 import pub.devrel.easypermissions.AppSettingsDialog
 import pub.devrel.easypermissions.EasyPermissions
 import androidx.work.Constraints.Builder;
-import com.alpharays.autosound.util.SoundWorker
+import com.alpharays.autosound.util.MyWorker
 import java.util.concurrent.TimeUnit
 
 
@@ -49,10 +53,20 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
     }
 
 
+    //private var settings : SharedPreferences = getSharedPreferences("MyPrefsFile", MODE_PRIVATE)
+    //val editor : SharedPreferences.Editor = settings.edit()
+    //var settings : SharedPreferences = getPreferences(MODE_PRIVATE)
+    private val FIRST_RUN_KEY = "firstRun"
+    private val PREFERENCE_NAME = "MyAppPreferences"
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        //var settings : SharedPreferences = getSharedPreferences("MyPrefsFile", MODE_PRIVATE)
+//        editor.apply{
+//            putBoolean("firstTime",true)
+//        }.apply()
+        checkFirstRun(this)
 
         binding.triggersRv.layoutManager = LinearLayoutManager(this)
 
@@ -75,6 +89,7 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
                     startActivity(intent)
                 }
                 triggerCardsAdapter.setOnActionDeleteListener { trigger ->
+                    //triggerViewModel.deleteTrigger(trigger)
                     confirmDelete(trigger)
                 }
                 triggerCardsAdapter.notifyDataSetChanged()
@@ -148,6 +163,35 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
             dialog.dismiss()
         }
         deleteAlert.show()
+    }
+
+    private fun checkFirstRun(context: Context) {
+        val sharedPreferences: SharedPreferences = getSharedPreferences(PREFERENCE_NAME, Context.MODE_PRIVATE)
+
+        val isFirstRun = sharedPreferences.getBoolean(FIRST_RUN_KEY, true)
+
+        if (isFirstRun) {
+            // Perform the task for the first time running the app
+            // For example, show an onboarding screen or display a welcome message
+            //performFirstTimeTask()
+            TapTargetView.showFor(
+                this, TapTarget.forView(binding.fab, "Create New Trigger")
+                    .outerCircleAlpha(0.96f)
+                    .titleTextSize(20)
+                    .drawShadow(true)
+                    .cancelable(false)
+                    .tintTarget(true)
+                    .transparentTarget(true)
+                    .targetRadius(50)
+            )
+            // Set the flag to indicate that the app has been run before
+            val editor = sharedPreferences.edit()
+            editor.putBoolean(FIRST_RUN_KEY, false)
+            editor.apply()
+        } //else {
+        // The app has been run before, perform regular operations here
+        //performRegularTask()
+        //}
     }
 
     override fun onResume() {

@@ -3,6 +3,7 @@ package com.alpharays.autosound.view
 import android.app.AlarmManager
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.os.Bundle
 import android.util.Log
 import android.view.View
@@ -21,6 +22,9 @@ import com.alpharays.autosound.util.Constants
 import com.alpharays.autosound.util.Utilities
 import com.alpharays.autosound.viewmodel.TriggerInstanceViewModel
 import com.alpharays.autosound.viewmodel.TriggerViewModel
+import com.getkeepsafe.taptargetview.TapTarget
+import com.getkeepsafe.taptargetview.TapTargetSequence
+import com.getkeepsafe.taptargetview.TapTargetView
 import com.google.android.material.datepicker.MaterialDatePicker
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.timepicker.MaterialTimePicker
@@ -58,7 +62,8 @@ class AddTriggerActivity : AppCompatActivity() {
 
     private var doUpdate: Trigger? = null                // check if we need to add or update
 
-
+    private val FIRST_RUN_KEY = "firstRun"
+    private val PREFERENCE_NAME = "MyAppPref"
     /*
     Required items to create a Trigger:
     1) if isRepeat: not need to select data : else need to select
@@ -70,7 +75,7 @@ class AddTriggerActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityAddTriggerBinding.inflate(layoutInflater)
         setContentView(binding.root)
-
+        checkFirstRun(this)
 
         if (alarmManagerHandler == null) {
             val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
@@ -436,5 +441,54 @@ class AddTriggerActivity : AppCompatActivity() {
         }
         return -1 // CheckBox not found
     }
+    private fun checkFirstRun(context: Context) {
+        val sharedPreferences: SharedPreferences = getSharedPreferences(PREFERENCE_NAME, Context.MODE_PRIVATE)
 
+        val isFirstRun = sharedPreferences.getBoolean(FIRST_RUN_KEY, true)
+
+        if (isFirstRun) {
+            val sequence = TapTargetSequence(this)
+                .targets(
+                    TapTarget.forView(binding.chooseDateBtn, "Set Date")
+                        .outerCircleAlpha(0.96f)
+                        .titleTextSize(20)
+                        .drawShadow(true)
+                        .cancelable(false)
+                        .tintTarget(true)
+                        .transparentTarget(true)
+                        .targetRadius(50),
+                    TapTarget.forView(binding.chooseTimeBtn, "Set Time")
+                        .outerCircleAlpha(0.96f)
+                        .titleTextSize(20)
+                        .drawShadow(true)
+                        .cancelable(false)
+                        .tintTarget(true)
+                        .transparentTarget(true)
+                        .targetRadius(50),
+                    TapTarget.forView(binding.repeatSwitch, "Click here", "If you want to set a repeting trigger")
+                        .outerCircleAlpha(0.96f)
+                        .titleTextSize(20)
+                        .drawShadow(true)
+                        .cancelable(false)
+                        .tintTarget(true)
+                        .transparentTarget(true)
+                        .targetRadius(50),
+                    TapTarget.forView(binding.createTrigger, "Click here to create a trigger")
+                        .outerCircleAlpha(0.96f)
+                        .titleTextSize(20)
+                        .drawShadow(true)
+                        .cancelable(false)
+                        .tintTarget(true)
+                        .transparentTarget(true)
+                        .targetRadius(50),
+                )
+            sequence.start()
+            val editor = sharedPreferences.edit()
+            editor.putBoolean(FIRST_RUN_KEY, false)
+            editor.apply()
+        } //else {
+        // The app has been run before, perform regular operations here
+        //performRegularTask()
+        //}
+    }
 }
