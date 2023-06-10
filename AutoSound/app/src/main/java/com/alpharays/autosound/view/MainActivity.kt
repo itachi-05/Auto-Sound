@@ -4,6 +4,8 @@ import android.Manifest
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Intent
+import android.content.SharedPreferences
+import android.content.Context
 import android.os.Bundle
 import android.provider.Settings
 import android.util.Log
@@ -18,6 +20,8 @@ import com.alpharays.autosound.databinding.ActivityMainBinding
 import com.alpharays.autosound.util.Constants
 import com.alpharays.autosound.util.TrackingUtility
 import com.alpharays.autosound.viewmodel.TriggerViewModel
+import com.getkeepsafe.taptargetview.TapTarget
+import com.getkeepsafe.taptargetview.TapTargetView
 import com.google.android.material.snackbar.Snackbar
 import pub.devrel.easypermissions.EasyPermissions
 import java.time.LocalDate
@@ -33,10 +37,20 @@ class MainActivity : AppCompatActivity() {
     private var isExecutedOnResume = false
     private lateinit var notificationManager: NotificationManager
 
+    //private var settings : SharedPreferences = getSharedPreferences("MyPrefsFile", MODE_PRIVATE)
+    //val editor : SharedPreferences.Editor = settings.edit()
+    //var settings : SharedPreferences = getPreferences(MODE_PRIVATE)
+    private val FIRST_RUN_KEY = "firstRun"
+    private val PREFERENCE_NAME = "MyAppPreferences"
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        //var settings : SharedPreferences = getSharedPreferences("MyPrefsFile", MODE_PRIVATE)
+//        editor.apply{
+//            putBoolean("firstTime",true)
+//        }.apply()
+        checkFirstRun(this)
 
 //        notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
 //        if(!notificationManager.isNotificationPolicyAccessGranted){
@@ -129,12 +143,25 @@ class MainActivity : AppCompatActivity() {
                     startActivity(intent)
                 }
                 triggerCardsAdapter.setOnActionDeleteListener { trigger ->
-                    triggerViewModel.deleteTrigger(trigger)
-                    //confirmDelete(trigger)
+                    //triggerViewModel.deleteTrigger(trigger)
+                    confirmDelete(trigger)
                 }
                 triggerCardsAdapter.notifyDataSetChanged()
             }
         }
+//        if(settings.getBoolean("firstTime",true)) {
+//            TapTargetView.showFor(
+//                this, TapTarget.forView(binding.fab, "Create New Trigger")
+//                    .outerCircleAlpha(0.96f)
+//                    .titleTextSize(20)
+//                    .drawShadow(true)
+//                    .cancelable(false)
+//                    .tintTarget(true)
+//                    .transparentTarget(true)
+//                    .targetRadius(50)
+//            )
+//            settings.edit().putBoolean("checkFirstTime",false).apply()
+//        }
     }
 
     override fun onResume() {
@@ -171,6 +198,35 @@ class MainActivity : AppCompatActivity() {
         builder.setCancelable(false) // This prevents the user from dismissing the dialog by pressing back button
         builder.show()
     }
+
+    private fun checkFirstRun(context: Context) {
+        val sharedPreferences: SharedPreferences = getSharedPreferences(PREFERENCE_NAME, Context.MODE_PRIVATE)
+
+        val isFirstRun = sharedPreferences.getBoolean(FIRST_RUN_KEY, true)
+
+        if (isFirstRun) {
+            // Perform the task for the first time running the app
+            // For example, show an onboarding screen or display a welcome message
+            //performFirstTimeTask()
+            TapTargetView.showFor(
+                this, TapTarget.forView(binding.fab, "Create New Trigger")
+                    .outerCircleAlpha(0.96f)
+                    .titleTextSize(20)
+                    .drawShadow(true)
+                    .cancelable(false)
+                    .tintTarget(true)
+                    .transparentTarget(true)
+                    .targetRadius(50)
+            )
+            // Set the flag to indicate that the app has been run before
+            val editor = sharedPreferences.edit()
+            editor.putBoolean(FIRST_RUN_KEY, false)
+            editor.apply()
+        } //else {
+            // The app has been run before, perform regular operations here
+            //performRegularTask()
+        //}
+    }
     fun confirmDelete(trigger:Trigger){
         val deleteAlert = AlertDialog.Builder(this)
         deleteAlert.setTitle("Delete")
@@ -181,11 +237,7 @@ class MainActivity : AppCompatActivity() {
         deleteAlert.setNegativeButton("NO") { dialog, _ ->
             dialog.dismiss()
         }
+        deleteAlert.show()
     }
 
 }
-
-// the following block was created to suppress an error
-//private fun Intent.putExtra(s: String, it: Trigger) {
-
-//}
