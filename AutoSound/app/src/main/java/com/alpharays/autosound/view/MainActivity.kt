@@ -31,7 +31,7 @@ import com.google.android.libraries.places.api.net.PlacesClient
 import pub.devrel.easypermissions.AppSettingsDialog
 import pub.devrel.easypermissions.EasyPermissions
 import androidx.work.Constraints.Builder;
-import com.alpharays.autosound.util.MyWorker
+import com.alpharays.autosound.util.SoundWorker
 import java.util.concurrent.TimeUnit
 
 
@@ -176,13 +176,13 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
             //performFirstTimeTask()
             TapTargetView.showFor(
                 this, TapTarget.forView(binding.fab, "Create New Trigger")
-                    .outerCircleAlpha(0.96f)
+                    .outerCircleAlpha(0.5f)
                     .titleTextSize(20)
                     .drawShadow(true)
                     .cancelable(false)
                     .tintTarget(true)
                     .transparentTarget(true)
-                    .targetRadius(50)
+                    .targetRadius(30)
             )
             // Set the flag to indicate that the app has been run before
             val editor = sharedPreferences.edit()
