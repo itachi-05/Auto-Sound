@@ -25,17 +25,24 @@
                 android:padding="2dp">
 
                 <ImageView
-                    android:layout_width="35dp"
+                    android:layout_width="0dp"
                     android:layout_height="35dp"
+                    android:layout_weight="0.2"
                     android:src="@drawable/app_icon" />
 
                 <CheckedTextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="10dp"
+                    android:layout_weight="0.6"
                     android:fontFamily="sans-serif-medium"
                     android:text="Auto Sound"
                     android:textSize="24sp" />
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/autoSoundMode"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
 
             </LinearLayout>
 

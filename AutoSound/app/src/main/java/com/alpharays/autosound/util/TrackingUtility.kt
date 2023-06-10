@@ -11,4 +11,11 @@ object TrackingUtility {
             context,
             Manifest.permission.ACCESS_NOTIFICATION_POLICY
         )
+
+    fun hasLocationPermissions(context: Context) =
+        EasyPermissions.hasPermissions(
+            context,
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.ACCESS_COARSE_LOCATION
+        )
 }
