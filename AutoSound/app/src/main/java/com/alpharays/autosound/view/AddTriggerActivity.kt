@@ -5,13 +5,17 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.CheckBox
 import android.widget.SeekBar
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.ReportFragment.Companion.reportFragment
 import androidx.lifecycle.ViewModelProvider
 import com.alpharays.autosound.R
 import com.alpharays.autosound.data.trigger.Trigger
@@ -82,6 +86,17 @@ class AddTriggerActivity : AppCompatActivity() {
             alarmManagerHandler = AlarmManagerHandler(this, alarmManager)
         }
 
+        checkBoxes = arrayOf(
+            binding.sunday,
+            binding.monday,
+            binding.tuesday,
+            binding.wedday,
+            binding.thurday,
+            binding.friday,
+            binding.satday
+        )
+
+        for (i in 0..6) daysSelected.add(0)
 
         //check if we need to update or create new
         //if update, then it stores the old values
@@ -93,8 +108,11 @@ class AddTriggerActivity : AppCompatActivity() {
                 updatedTriggerId = it.id
                 binding.createTrigger.text = "Update"
                 val dateFormat = SimpleDateFormat("dd MMM yyyy")
-                val upDate = dateFormat.format(it.triggerDateTime).toString()
-                binding.chooseDateBtn.text = upDate
+                it.triggerDateTime?.let { date ->
+                    val upDate = dateFormat.format(date).toString()
+                    binding.chooseDateBtn.text = upDate
+                }
+                binding.repeatSwitch.isChecked = it.isRepeat
                 binding.chooseTimeBtn.text = it.triggerTime
                 binding.ringerVolumeLL.visibility = View.VISIBLE
                 binding.ringerVolumeSeekBar.progress = it.ringerVolume
@@ -108,27 +126,26 @@ class AddTriggerActivity : AppCompatActivity() {
                 mediaVolumeSelected = it.mediaVolume
                 alarmVolumeSelected = it.alarmVolume
                 isRepeatTriggerCheck = it.isRepeat
+                daysOfWeek = it.daysOfWeek
                 var updateDaysOfWeek = ""
-                for (days in it.daysOfWeek.indices) updateDaysOfWeek += it.daysOfWeek[days].toString()
-                daysOfWeek = updateDaysOfWeek
+                repeatSwitchObserver.postValue(it.isRepeat)
+                if (it.isRepeat) for (checkBox in checkBoxes) checkBox.isEnabled = true
+                if (daysOfWeek.length == 7) {
+                    for (idx in checkBoxes.indices) {
+                        if (it.daysOfWeek[idx].toString() == "1") {
+                            numberOfCheckBoxesChecked++
+                            checkBoxes[idx].isChecked = true
+                            daysSelected[idx] = 1
+                        }
+                    }
+                    for (days in it.daysOfWeek.indices) updateDaysOfWeek += it.daysOfWeek[days].toString()
+                    daysOfWeek = updateDaysOfWeek
+                }
                 ringerModeSelectedFromUpdate = it.ringerMode
                 ringerModeSelected = it.ringerMode
                 ringerModeObserver.postValue(it.ringerMode)
             }
-            //binding.ringerVolumeSeekBar = doUpdate?.triggerTime
-            //update seekbars
         }
-        for (i in 0..6) daysSelected.add(0)
-
-        checkBoxes = arrayOf(
-            binding.sunday,
-            binding.monday,
-            binding.tuesday,
-            binding.wedday,
-            binding.thurday,
-            binding.friday,
-            binding.satday
-        )
 
         // 1st layout : repeat switch
         binding.repeatSwitch.setOnCheckedChangeListener { _, isChecked ->
@@ -139,7 +156,6 @@ class AddTriggerActivity : AppCompatActivity() {
             it?.let { repeat ->
                 isRepeatTriggerCheck = repeat
                 if (repeat) {
-                    // 2nd layout : check boxes
                     for (checkBox in checkBoxes) checkBox.isEnabled = true
                     for (checkBox in checkBoxes) {
                         checkBox.setOnClickListener {
@@ -174,7 +190,6 @@ class AddTriggerActivity : AppCompatActivity() {
         }
 
 
-        // 4th layout : ringer modes
         val adapter = ArrayAdapter(this, R.layout.ringer_modes_item, Utilities.ringerModes)
         binding.autoCompleteRingerMode.setAdapter(adapter)
         if (ringerModeSelectedFromUpdate.isEmpty() || ringerModeSelectedFromUpdate == "") {
@@ -188,7 +203,6 @@ class AddTriggerActivity : AppCompatActivity() {
             ringerModeSelected = selectedRingerMode.toString()
             ringerModeObserver.postValue(selectedRingerMode.toString())
         }
-
 
         ringerModeObserver.observe(this) {
             it?.let { ringerMode ->
@@ -269,84 +283,89 @@ class AddTriggerActivity : AppCompatActivity() {
 
         // 8th layout : create trigger button
         binding.createTrigger.setOnClickListener {
-            if (doUpdate == null) {
-                if (isRepeatTriggerCheck) {
-                    if (numberOfCheckBoxesChecked == 0) {
-                        showSnackBar("Select days to create Trigger")
-                    } else if (timeSelected == "" || timeSelected.isEmpty()) {
-                        showSnackBar("Select time to create Trigger")
-                    } else if (timeSelected != "" && timeSelected.isNotEmpty()) {
-                        daysOfWeek = ""
-                        for (days in daysSelected.indices) daysOfWeek += daysSelected[days].toString()
-                        val trigger = Trigger(
-                            true,
-                            daysOfWeek,
-                            timeSelected,
-                            null,
-                            ringerModeSelected,
-                            ringerVolumeSelected,
-                            mediaVolumeSelected,
-                            alarmVolumeSelected
-                        )
+            daysOfWeek = ""
+            for (days in daysSelected.indices) daysOfWeek += daysSelected[days].toString()
+            if (isRepeatTriggerCheck) {
+                if (numberOfCheckBoxesChecked == 0) {
+                    showSnackBar("Select days to create Trigger")
+                } else if (timeSelected == "" || timeSelected.isEmpty()) {
+                    showSnackBar("Select time to create Trigger")
+                } else if (timeSelected != "" && timeSelected.isNotEmpty()) {
+                    val trigger = Trigger(
+                        true,
+                        daysOfWeek,
+                        timeSelected,
+                        null,
+                        ringerModeSelected,
+                        ringerVolumeSelected,
+                        mediaVolumeSelected,
+                        alarmVolumeSelected
+                    )
+                    if (doUpdate == null) {
                         triggerViewModel.createTrigger(trigger) {
                             val triggerInstance = TriggerInstance(trigger.id)
                             triggerInstanceViewModel.createTriggerInstance(triggerInstance)
                             // set alarm for a new trigger
                             alarmManagerHandler?.setAlarm(trigger.id.toInt(), trigger)
                         }
-                        showSnackBar("Trigger Created")
-                        exitScreen()
                     } else {
-                        showSnackBar("Select time to create Trigger")
+                        trigger.id = updatedTriggerId
+//                        trigger.triggerTime = "06:04 PM"
+                        triggerViewModel.updateTrigger(trigger)
+                        // set alarm for a updated trigger
+                        alarmManagerHandler?.cancelAlarm(updatedTriggerId.toInt())
+                        Handler(Looper.getMainLooper()).postDelayed({
+                            alarmManagerHandler?.setAlarm(trigger.id.toInt(), trigger)
+                        }, 100L)
                     }
+                    showSnackBar("Trigger Created")
+                    exitScreen()
                 } else {
-                    if (dateSelected == null) {
-                        showSnackBar("Select date to create Trigger")
-                    } else if (timeSelected == "" || timeSelected.isEmpty()) {
-                        showSnackBar("Select time to create Trigger")
-                    } else if (timeSelected != "" && timeSelected.isNotEmpty() && dateSelected != null) {
-                        val trigger = Trigger(
-                            false,
-                            "",
-                            timeSelected,
-                            dateSelected,
-                            ringerModeSelected,
-                            ringerVolumeSelected,
-                            mediaVolumeSelected,
-                            alarmVolumeSelected
-                        )
-                        triggerViewModel.createTrigger(trigger) {
-                            val triggerInstance = TriggerInstance(trigger.id)
-                            triggerInstanceViewModel.createTriggerInstance(triggerInstance)
-                            // set alarm for a new trigger
-                            alarmManagerHandler?.setAlarm(trigger.id.toInt(), trigger)
-                        }
-                        showSnackBar("Trigger Created")
-                        exitScreen()
-                    } else {
-                        try {
-                            showSnackBar("triggerError#1: $isRepeatTriggerCheck : $numberOfCheckBoxesChecked : $timeSelected : $dateSelected : $ringerModeSelected : $ringerVolumeSelected : $mediaVolumeSelected : $alarmVolumeSelected")
-                        } catch (e: Exception) {
-                            Log.i("exceptionTrigger$1", e.message.toString())
-                        }
-                        showSnackBar("Something went wrong")
-                    }
+                    showSnackBar("Select time to create Trigger")
                 }
             } else {
-                val trigger = Trigger(
-                    false,
-                    daysOfWeek,
-                    timeSelected,
-                    dateSelected,
-                    ringerModeSelected,
-                    ringerVolumeSelected,
-                    mediaVolumeSelected,
-                    alarmVolumeSelected
-                )
-                trigger.id = updatedTriggerId
-                triggerViewModel.updateTrigger(trigger)
-                showSnackBar("Trigger Updated")
-                exitScreen()
+                if (dateSelected == null) {
+                    showSnackBar("Select date to create Trigger")
+                } else if (timeSelected == "" || timeSelected.isEmpty()) {
+                    showSnackBar("Select time to create Trigger")
+                } else if (timeSelected != "" && timeSelected.isNotEmpty() && dateSelected != null) {
+                    val trigger = Trigger(
+                        false,
+                        "",
+                        timeSelected,
+                        dateSelected,
+                        ringerModeSelected,
+                        ringerVolumeSelected,
+                        mediaVolumeSelected,
+                        alarmVolumeSelected
+                    )
+                    if (doUpdate == null) {
+                        triggerViewModel.createTrigger(trigger) {
+                            val triggerInstance = TriggerInstance(trigger.id)
+                            triggerInstanceViewModel.createTriggerInstance(triggerInstance)
+                            // set alarm for a new trigger
+                            alarmManagerHandler?.setAlarm(trigger.id.toInt(), trigger)
+                        }
+                    } else {
+                        trigger.id = updatedTriggerId
+//                        trigger.triggerTime = "06:04 PM"
+                        triggerViewModel.updateTrigger(trigger)
+                        // set alarm for a updated trigger
+                        alarmManagerHandler?.cancelAlarm(updatedTriggerId.toInt())
+                        Handler(Looper.getMainLooper()).postDelayed({
+                            alarmManagerHandler?.setAlarm(trigger.id.toInt(), trigger)
+                        }, 100L)
+                    }
+                    showSnackBar("Trigger Created")
+                    exitScreen()
+                } else {
+                    try {
+                        showSnackBar("triggerError#1: $isRepeatTriggerCheck : $numberOfCheckBoxesChecked : $timeSelected : $dateSelected : $ringerModeSelected : $ringerVolumeSelected : $mediaVolumeSelected : $alarmVolumeSelected")
+                    } catch (e: Exception) {
+                        Log.i("exceptionTrigger$1", e.message.toString())
+                    }
+                    showSnackBar("Something went wrong")
+                }
             }
         }
 
@@ -441,8 +460,10 @@ class AddTriggerActivity : AppCompatActivity() {
         }
         return -1 // CheckBox not found
     }
+
     private fun checkFirstRun(context: Context) {
-        val sharedPreferences: SharedPreferences = getSharedPreferences(PREFERENCE_NAME, Context.MODE_PRIVATE)
+        val sharedPreferences: SharedPreferences =
+            getSharedPreferences(PREFERENCE_NAME, Context.MODE_PRIVATE)
 
         val isFirstRun = sharedPreferences.getBoolean(FIRST_RUN_KEY, true)
 
@@ -450,37 +471,41 @@ class AddTriggerActivity : AppCompatActivity() {
             val sequence = TapTargetSequence(this)
                 .targets(
                     TapTarget.forView(binding.chooseDateBtn, "Set Date")
-                        .outerCircleAlpha(0.96f)
+                        .outerCircleAlpha(0.6f)
                         .titleTextSize(20)
                         .drawShadow(true)
                         .cancelable(false)
                         .tintTarget(true)
                         .transparentTarget(true)
-                        .targetRadius(50),
+                        .targetRadius(40),
                     TapTarget.forView(binding.chooseTimeBtn, "Set Time")
-                        .outerCircleAlpha(0.96f)
+                        .outerCircleAlpha(0.6f)
                         .titleTextSize(20)
                         .drawShadow(true)
                         .cancelable(false)
                         .tintTarget(true)
                         .transparentTarget(true)
-                        .targetRadius(50),
-                    TapTarget.forView(binding.repeatSwitch, "Click here", "If you want to set a repeting trigger")
-                        .outerCircleAlpha(0.96f)
+                        .targetRadius(40),
+                    TapTarget.forView(
+                        binding.repeatSwitch,
+                        "Click here",
+                        "If you want to set a repeating trigger"
+                    )
+                        .outerCircleAlpha(0.6f)
                         .titleTextSize(20)
                         .drawShadow(true)
                         .cancelable(false)
                         .tintTarget(true)
                         .transparentTarget(true)
-                        .targetRadius(50),
+                        .targetRadius(40),
                     TapTarget.forView(binding.createTrigger, "Click here to create a trigger")
-                        .outerCircleAlpha(0.96f)
+                        .outerCircleAlpha(0.6f)
                         .titleTextSize(20)
                         .drawShadow(true)
                         .cancelable(false)
                         .tintTarget(true)
                         .transparentTarget(true)
-                        .targetRadius(50),
+                        .targetRadius(40),
                 )
             sequence.start()
             val editor = sharedPreferences.edit()

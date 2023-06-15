@@ -99,10 +99,13 @@ class TriggerCardsAdapter(private var triggers: MutableList<Trigger>) :
         val minute = timeParts[1].substringBefore(" ").toInt()
         val period = timeParts[1].substringAfter(" ")
 
-        val localTime = if (period.equals("AM", ignoreCase = true) && hour == 12) {
-            // Handle midnight (12 AM)
-            LocalTime.MIDNIGHT
-        } else if (period.equals("PM", ignoreCase = true) && hour < 12) {
+        val localTime = if (period.equals("AM", ignoreCase = true) && hour == 12 && minute != 0) {
+            // Use 12-hour format for AM hours other than midnight
+            LocalTime.of(0, minute)
+        } else if (period.equals("PM", ignoreCase = true) && hour == 12) {
+            // Use 12-hour format for PM hours at noon (12 PM)
+            LocalTime.of(hour, minute)
+        } else if (period.equals("PM", ignoreCase = true)) {
             // Convert PM hours to 24-hour format
             LocalTime.of(hour + 12, minute)
         } else {

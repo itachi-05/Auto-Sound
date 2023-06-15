@@ -25,6 +25,8 @@ class AlarmManagerHandler(
         intent.putExtra(Constants.RINGER_MODE_BUNDLE_NAME, trigger.ringerMode)
         val arrayList = arrayListOf(trigger.ringerVolume, trigger.mediaVolume, trigger.alarmVolume)
         intent.putExtra(Constants.VOLUMES_BUNDLE_NAME, arrayList.toIntArray())
+        val timeInfo = trigger.triggerTime
+        intent.putExtra("timeInfo", timeInfo)
 
         val flags = PendingIntent.FLAG_UPDATE_CURRENT
         val pendingIntent = PendingIntent.getBroadcast(context, requestCode, intent, flags)
@@ -54,10 +56,23 @@ class AlarmManagerHandler(
         }
     }
 
+//    fun cancelAlarm(requestCode: Int) {
+//        val intent = Intent(context, AutoSoundTriggerReceiver::class.java)
+//        val flags = PendingIntent.FLAG_UPDATE_CURRENT
+//        val pendingIntent = PendingIntent.getBroadcast(context, requestCode, intent, flags)
+//        alarmManager.cancel(pendingIntent)
+//    }
+
     fun cancelAlarm(requestCode: Int) {
         val intent = Intent(context, AutoSoundTriggerReceiver::class.java)
-        val flags = PendingIntent.FLAG_UPDATE_CURRENT
+        val flags = PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
         val pendingIntent = PendingIntent.getBroadcast(context, requestCode, intent, flags)
-        alarmManager.cancel(pendingIntent)
+        if (pendingIntent != null) {
+            alarmManager.cancel(pendingIntent)
+            pendingIntent.cancel()
+        } else {
+            Log.i("alarmDoesNotExist", "NA")
+        }
     }
+
 }

@@ -2,17 +2,24 @@ package com.alpharays.autosound.view
 
 import android.Manifest
 import android.R
+import android.app.AlarmManager
 import android.app.NotificationManager
 import android.content.Intent
 import android.content.SharedPreferences
 import android.location.LocationManager
 import android.content.Context
+import android.content.pm.PackageManager
+import android.location.Location
+import android.location.LocationListener
+import android.media.AudioManager
 import android.os.Bundle
 import android.provider.Settings
 import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.work.Constraints
@@ -31,7 +38,16 @@ import com.google.android.libraries.places.api.net.PlacesClient
 import pub.devrel.easypermissions.AppSettingsDialog
 import pub.devrel.easypermissions.EasyPermissions
 import androidx.work.Constraints.Builder;
+import androidx.work.Data
+import androidx.work.WorkerParameters
+import com.alpharays.autosound.util.AlarmManagerHandler
+import com.alpharays.autosound.util.LocationWorker
 import com.alpharays.autosound.util.SoundWorker
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Locale
+import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 
@@ -40,11 +56,17 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
     private val triggerViewModel: TriggerViewModel by lazy { ViewModelProvider(this)[TriggerViewModel::class.java] }
     private val locationViewModel: LocationViewModel by lazy { ViewModelProvider(this)[LocationViewModel::class.java] }
     private lateinit var triggerCardsAdapter: TriggerCardsAdapter
+    private var isGpsAsked = false
+    private var alarmManagerHandler: AlarmManagerHandler? = null
+    private val audioManager: AudioManager by lazy {
+        this.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+    }
     private val REQUEST_CODE_LOCATION_PERMISSION = 123
     private val triggersList: MutableList<Trigger> = ArrayList()
     private lateinit var notificationManager: NotificationManager
     private lateinit var placesClient: PlacesClient
     private var isLocationPermissionGranted = false
+    private val locationLiveData: MutableLiveData<Boolean> = MutableLiveData(false)
     private val autoSoundSharedPref: SharedPreferences by lazy {
         getSharedPreferences(
             "autoSoundModeSharedPref#0",
@@ -67,6 +89,11 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
 //            putBoolean("firstTime",true)
 //        }.apply()
         checkFirstRun(this)
+
+        if (alarmManagerHandler == null) {
+            val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+            alarmManagerHandler = AlarmManagerHandler(this, alarmManager)
+        }
 
         binding.triggersRv.layoutManager = LinearLayoutManager(this)
 
@@ -96,59 +123,78 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
             }
         }
 
-        // Initialize the SDK
-//        val MAPS_API_KEY = "AIzaSyDYS2nGfVF2EeKD2W0OQipondywFYZxaGc"
-//        Places.initialize(applicationContext, MAPS_API_KEY)
-
-        // Create a new PlacesClient instance
-//        placesClient = Places.createClient(this)
-
         // checking places api:
         val loc = "28.638384994491613,77.0638923540995"
         val loc_new = "28.638180242340077,77.04984428672424"
 
-        val isModeOn = autoSoundSharedPref.getBoolean("sharedPrefAutoSound_1", false)
-        binding.autoSoundMode.isChecked = isModeOn
+//        val isModeOn = autoSoundSharedPref.getBoolean("sharedPrefAutoSound_1", false)
+//        binding.autoSoundMode.isChecked = isModeOn
+//
+//        binding.autoSoundMode.setOnCheckedChangeListener { _, isChecked ->
+//            // Perform actions based on the checked state
+//            if (isChecked) {
+//                // Auto sound mode is enabled
+//                autoSoundSharedPref.edit().putBoolean("sharedPrefAutoSound_1", true).apply()
+//                Toast.makeText(this, "On", Toast.LENGTH_SHORT).show()
+//            } else {
+//                // Auto sound mode is disabled
+//                autoSoundSharedPref.edit().putBoolean("sharedPrefAutoSound_1", false).apply()
+//                Toast.makeText(this, "Off", Toast.LENGTH_SHORT).show()
+//            }
+//        }
 
-        binding.autoSoundMode.setOnCheckedChangeListener { _, isChecked ->
-            // Perform actions based on the checked state
-            if (isChecked) {
-                // Auto sound mode is enabled
-                autoSoundSharedPref.edit().putBoolean("sharedPrefAutoSound_1", true).apply()
-                Toast.makeText(this, "On", Toast.LENGTH_SHORT).show()
+        if (isLocationEnabled()) {
+            isGpsAsked = true
+            val locationTag = "location_worker"
+            val soundTag = "update_location"
+
+            val isModeOn = autoSoundSharedPref.getBoolean("sharedPrefAutoSound_1", false)
+            binding.autoSoundMode.isChecked = isModeOn
+            if (isModeOn) {
+                // Location Worker already running
+//                LocationWorker.deployWork(this)
             } else {
-                // Auto sound mode is disabled
-                autoSoundSharedPref.edit().putBoolean("sharedPrefAutoSound_1", false).apply()
-                Toast.makeText(this, "Off", Toast.LENGTH_SHORT).show()
+                WorkManager.getInstance(this).cancelUniqueWork(locationTag)
+                WorkManager.getInstance(this).cancelUniqueWork(soundTag)
             }
-        }
 
-        workManager()
-
-
-        locationViewModel.fetchLocation(loc_new).observe(this) { list ->
-            list?.let {
-                // search this data and give it to job scheduler
-                for (i in it.indices) {
-                    Log.i("searching_Place $i", it[i])
+            binding.autoSoundMode.setOnCheckedChangeListener { _, isChecked ->
+                // Perform actions based on the checked state
+                if (isChecked) {
+                    // Auto sound mode is enabled
+                    autoSoundSharedPref.edit().putBoolean("sharedPrefAutoSound_1", true).apply()
+                    LocationWorker.deployWork(this)
+                    Toast.makeText(this, "AutoSound Mode On", Toast.LENGTH_LONG).show()
+                } else {
+                    audioManager.ringerMode = AudioManager.RINGER_MODE_NORMAL
+                    audioManager.setStreamVolume(
+                        AudioManager.STREAM_MUSIC,
+                        100,
+                        AudioManager.FLAG_VIBRATE
+                    )
+                    audioManager.setStreamVolume(
+                        AudioManager.STREAM_NOTIFICATION,
+                        100,
+                        AudioManager.FLAG_VIBRATE
+                    )
+                    // Auto sound mode is disabled
+                    autoSoundSharedPref.edit().putBoolean("sharedPrefAutoSound_1", false).apply()
+                    WorkManager.getInstance(this).cancelUniqueWork(locationTag)
+                    WorkManager.getInstance(this).cancelUniqueWork(soundTag)
+                    Toast.makeText(this, "AutoSound Mode Off", Toast.LENGTH_LONG).show()
                 }
             }
         }
 
-    }
+//        locationViewModel.fetchLocation(loc_new).observe(this) { list ->
+//            list?.let {
+//                // search this data and give it to job scheduler
+//                for (i in it.indices) {
+//                    Log.i("searching_Place $i", it[i])
+//                }
+//            }
+//        }
 
-    private fun workManager() {
-        // Set up the constraints for the work
-        // Set up the constraints for the work
-        val constraints: Constraints = Builder().build()
-
-        // Create the periodic work request to run every 15 minutes
-        val workRequest: PeriodicWorkRequest = PeriodicWorkRequest.Builder(SoundWorker::class.java, 15, TimeUnit.MINUTES)
-            .setConstraints(constraints)
-            .build()
-
-        // Enqueue the work request
-        WorkManager.getInstance(this).enqueue(workRequest)
     }
 
 
@@ -158,6 +204,7 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
         deleteAlert.setMessage("Are you sure?")
         deleteAlert.setPositiveButton("YES") { _, _ ->
             triggerViewModel.deleteTrigger(trigger)
+            alarmManagerHandler?.cancelAlarm(trigger.id.toInt())
         }
         deleteAlert.setNegativeButton("NO") { dialog, _ ->
             dialog.dismiss()
@@ -166,7 +213,8 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
     }
 
     private fun checkFirstRun(context: Context) {
-        val sharedPreferences: SharedPreferences = getSharedPreferences(PREFERENCE_NAME, Context.MODE_PRIVATE)
+        val sharedPreferences: SharedPreferences =
+            getSharedPreferences(PREFERENCE_NAME, Context.MODE_PRIVATE)
 
         val isFirstRun = sharedPreferences.getBoolean(FIRST_RUN_KEY, true)
 
@@ -176,13 +224,13 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
             //performFirstTimeTask()
             TapTargetView.showFor(
                 this, TapTarget.forView(binding.fab, "Create New Trigger")
-                    .outerCircleAlpha(0.5f)
+                    .outerCircleAlpha(0.6f)
                     .titleTextSize(20)
                     .drawShadow(true)
                     .cancelable(false)
                     .tintTarget(true)
                     .transparentTarget(true)
-                    .targetRadius(30)
+                    .targetRadius(40)
             )
             // Set the flag to indicate that the app has been run before
             val editor = sharedPreferences.edit()
@@ -202,52 +250,36 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
         } else {
             if (!isLocationPermissionGranted) {
                 requestPermissions()
-            } else if (!isLocationEnabled()) {
-                displayLocationEnableDialog()
+            } else if (!isLocationEnabled()) displayLocationEnableDialog()
+            else if (isLocationPermissionGranted && isLocationEnabled() && !isGpsAsked) {
+                LocationWorker.deployWork(this)
             }
         }
-//        if (isLocationEnabled()) {
-//            // Everything is set up
-//            // Use fields to define the data types to return.
-//            val placeFields: List<Place.Field> = listOf(Place.Field.NAME)
-//
-//            // Use the builder to create a FindCurrentPlaceRequest.
-//            val request: FindCurrentPlaceRequest =
-//                FindCurrentPlaceRequest.newInstance(placeFields)
-//
-//            // Call findCurrentPlace and handle the response (first check that the user has granted permission).
-//            if (ContextCompat.checkSelfPermission(
-//                    this,
-//                    Manifest.permission.ACCESS_FINE_LOCATION
-//                ) ==
-//                PackageManager.PERMISSION_GRANTED
-//            ) {
-//
-//                val placeResponse = placesClient.findCurrentPlace(request)
-//                placeResponse.addOnCompleteListener { task ->
-//                    if (task.isSuccessful) {
-//                        val response = task.result
-//                        for (placeLikelihood: PlaceLikelihood in response?.placeLikelihoods
-//                            ?: emptyList()) {
-//                            Log.i(
-//                                "TAG_1",
-//                                "Place '${placeLikelihood.place.name}' has likelihood: ${placeLikelihood.likelihood}"
-//                            )
-//                        }
-//                    } else {
-//                        val exception = task.exception
-//                        if (exception is ApiException) {
-//                            Log.e("TAG", "Place not found: ${exception.statusCode}")
-//                        }
-//                    }
-//                }
-//            } else {
-//                // A local method to request required permissions;
-//                // See https://developer.android.com/training/permissions/requesting
-//                requestPermissions()
-//            }
-//        }
     }
+
+    private val locationListener = object : LocationListener {
+        override fun onLocationChanged(location: Location) {
+            // Handle location updates if needed
+        }
+
+        override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) {
+            // Handle status changes if needed
+        }
+
+        override fun onProviderEnabled(provider: String) {
+            // Location provider (GPS, network) is enabled
+            // Handle the enabled state if needed
+            locationLiveData.postValue(true)
+
+        }
+
+        override fun onProviderDisabled(provider: String) {
+            // Location provider (GPS, network) is disabled
+            // Handle the disabled state if needed
+            locationLiveData.postValue(false)
+        }
+    }
+
 
     private fun isLocationEnabled(): Boolean {
         val locationManager = getSystemService(LOCATION_SERVICE) as LocationManager
@@ -290,6 +322,7 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
     private fun requestPermissions() {
         if (TrackingUtility.hasLocationPermissions(this)) {
             isLocationPermissionGranted = true
+            onResume()
             return
         }
         EasyPermissions.requestPermissions(
