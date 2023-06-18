@@ -28,6 +28,9 @@ interface TriggerDao {
         alarmVolume: Int
     )
 
+    @Query("SELECT * FROM sound_trigger WHERE id=:id")
+    fun getTrigger(id: Long): Trigger
+
     @Query("SELECT * FROM sound_trigger")
     fun getAllTriggers(): LiveData<List<Trigger>>
 

@@ -21,6 +21,9 @@ import com.alpharays.autosound.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import kotlin.random.Random
 
 
@@ -41,9 +44,14 @@ class AutoSoundTriggerReceiver : BroadcastReceiver() {
         val volumes = intent.getIntArrayExtra(Constants.VOLUMES_BUNDLE_NAME)?.toList()
 
         val timeInfo = intent.getStringExtra("timeInfo")
+        var timeTobeShown = ""
+        timeInfo?.let {
+            val myDate = Date(it.toLong())
+            val sdf = SimpleDateFormat("hh:mm a", Locale.getDefault())
+            timeTobeShown = sdf.format(myDate)
+        }
 
         Log.i("checkingAlarmTimeInfo", timeInfo.toString())
-//        Toast.makeText(context, timeInfo.toString(), Toast.LENGTH_LONG).show()
 
 
         volumes?.let {
@@ -133,7 +141,7 @@ class AutoSoundTriggerReceiver : BroadcastReceiver() {
                     .setLargeIcon(largeIconBitmap)
                     .setSmallIcon(R.drawable.app_icon)
                     .setContentTitle("AutoSound Triggered")
-                    .setContentText("Ringer mode set to $ringerMode at $timeInfo")
+                    .setContentText("Ringer mode set to $ringerMode at $timeTobeShown")
                     .setPriority(NotificationCompat.PRIORITY_HIGH)
                     .setDefaults(Notification.DEFAULT_VIBRATE)
                     .setAutoCancel(true)

@@ -111,6 +111,7 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
                 triggersList.clear()
                 triggersList.addAll(allTriggers)
                 triggerCardsAdapter.setOnActionEditListener { trigger ->
+                    Toast.makeText(this, trigger.id.toString(), Toast.LENGTH_SHORT).show()
                     val intent = Intent(this, AddTriggerActivity::class.java)
                     intent.putExtra("Data", trigger)
                     startActivity(intent)

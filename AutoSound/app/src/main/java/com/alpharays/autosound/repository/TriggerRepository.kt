@@ -13,6 +13,10 @@ class TriggerRepository(private val triggerDao: TriggerDao) {
         triggerDao.createTrigger(trigger)
     }
 
+    suspend fun getTrigger(id: Long) : Trigger{
+        return triggerDao.getTrigger(id)
+    }
+
     suspend fun updateTrigger(trigger: Trigger) {
         triggerDao.updateTrigger(
             trigger.id,

@@ -113,7 +113,10 @@ class AddTriggerActivity : AppCompatActivity() {
                     binding.chooseDateBtn.text = upDate
                 }
                 binding.repeatSwitch.isChecked = it.isRepeat
-                binding.chooseTimeBtn.text = it.triggerTime
+                val myDate = Date(it.triggerTime.toLong())
+                val sdf = SimpleDateFormat("hh:mm a", Locale.getDefault())
+                val timeTobeShown = sdf.format(myDate)
+                binding.chooseTimeBtn.text = timeTobeShown
                 binding.ringerVolumeLL.visibility = View.VISIBLE
                 binding.ringerVolumeSeekBar.progress = it.ringerVolume
                 binding.alarmVolumeSeekBar.progress = it.alarmVolume
@@ -309,14 +312,33 @@ class AddTriggerActivity : AppCompatActivity() {
                             alarmManagerHandler?.setAlarm(trigger.id.toInt(), trigger)
                         }
                     } else {
-                        trigger.id = updatedTriggerId
-//                        trigger.triggerTime = "06:04 PM"
-                        triggerViewModel.updateTrigger(trigger)
-                        // set alarm for a updated trigger
-                        alarmManagerHandler?.cancelAlarm(updatedTriggerId.toInt())
-                        Handler(Looper.getMainLooper()).postDelayed({
-                            alarmManagerHandler?.setAlarm(trigger.id.toInt(), trigger)
-                        }, 100L)
+                        triggerViewModel.getTriggerById(updatedTriggerId)
+                            .observe(this) { existingTrigger ->
+                                if (existingTrigger != null) {
+                                    existingTrigger.isRepeat = true
+                                    existingTrigger.daysOfWeek = daysOfWeek
+                                    existingTrigger.triggerTime = timeSelected
+                                    existingTrigger.triggerDateTime = null
+                                    existingTrigger.ringerMode = ringerModeSelected
+                                    existingTrigger.ringerVolume = ringerVolumeSelected
+                                    existingTrigger.mediaVolume = mediaVolumeSelected
+                                    existingTrigger.alarmVolume = alarmVolumeSelected
+
+                                    // Update the existing trigger
+                                    triggerViewModel.updateTrigger(existingTrigger)
+
+                                    // Cancel the previous alarm
+                                    alarmManagerHandler?.cancelAlarm(updatedTriggerId.toInt())
+
+                                    // Set a new alarm for the updated trigger
+                                    Handler(Looper.getMainLooper()).postDelayed({
+                                        alarmManagerHandler?.setAlarm(
+                                            updatedTriggerId.toInt(),
+                                            existingTrigger
+                                        )
+                                    }, 200L)
+                                }
+                            }
                     }
                     showSnackBar("Trigger Created")
                     exitScreen()
@@ -347,14 +369,33 @@ class AddTriggerActivity : AppCompatActivity() {
                             alarmManagerHandler?.setAlarm(trigger.id.toInt(), trigger)
                         }
                     } else {
-                        trigger.id = updatedTriggerId
-//                        trigger.triggerTime = "06:04 PM"
-                        triggerViewModel.updateTrigger(trigger)
-                        // set alarm for a updated trigger
-                        alarmManagerHandler?.cancelAlarm(updatedTriggerId.toInt())
-                        Handler(Looper.getMainLooper()).postDelayed({
-                            alarmManagerHandler?.setAlarm(trigger.id.toInt(), trigger)
-                        }, 100L)
+                        triggerViewModel.getTriggerById(updatedTriggerId)
+                            .observe(this) { existingTrigger ->
+                                if (existingTrigger != null) {
+                                    existingTrigger.isRepeat = false
+                                    existingTrigger.daysOfWeek = ""
+                                    existingTrigger.triggerTime = timeSelected
+                                    existingTrigger.triggerDateTime = dateSelected
+                                    existingTrigger.ringerMode = ringerModeSelected
+                                    existingTrigger.ringerVolume = ringerVolumeSelected
+                                    existingTrigger.mediaVolume = mediaVolumeSelected
+                                    existingTrigger.alarmVolume = alarmVolumeSelected
+
+                                    // Update the existing trigger
+                                    triggerViewModel.updateTrigger(existingTrigger)
+
+                                    // Cancel the previous alarm
+                                    alarmManagerHandler?.cancelAlarm(updatedTriggerId.toInt())
+
+                                    // Set a new alarm for the updated trigger
+                                    Handler(Looper.getMainLooper()).postDelayed({
+                                        alarmManagerHandler?.setAlarm(
+                                            updatedTriggerId.toInt(),
+                                            existingTrigger
+                                        )
+                                    }, 200L)
+                                }
+                            }
                     }
                     showSnackBar("Trigger Created")
                     exitScreen()
@@ -423,6 +464,15 @@ class AddTriggerActivity : AppCompatActivity() {
             val selectedHour = timePicker.hour
             val selectedMinute = timePicker.minute
 
+            val myCalendar = Calendar.getInstance()
+            myCalendar.set(Calendar.HOUR_OF_DAY, selectedHour)
+            myCalendar.set(Calendar.MINUTE, selectedMinute)
+            myCalendar.set(Calendar.SECOND, 0)
+            myCalendar.set(Calendar.MILLISECOND, 0)
+
+            val timeInMillis = myCalendar.timeInMillis
+            timeSelected = timeInMillis.toString()  // save the time in millis
+
             val hour = when {
                 selectedHour == 0 -> 12 // Midnight
                 selectedHour > 12 -> selectedHour - 12 // Afternoon or Evening
@@ -431,8 +481,14 @@ class AddTriggerActivity : AppCompatActivity() {
 
             val timeSuffix = if (selectedHour >= 12) "PM" else "AM"
             val formattedTime = String.format("%02d:%02d %s", hour, selectedMinute, timeSuffix)
-            timeSelected = formattedTime
-            binding.chooseTimeBtn.text = formattedTime
+            binding.chooseTimeBtn.text = formattedTime  // show the formatted time to the user
+
+            // checking values:
+            val myDate = Date(timeSelected.toLong())
+            val sdf = SimpleDateFormat("hh:mm:ss a", Locale.getDefault())
+            val timeTobeShown = sdf.format(myDate)
+
+            Log.i("time tie: ", "$formattedTime : $timeTobeShown")
         }
 
     }

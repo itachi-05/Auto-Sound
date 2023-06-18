@@ -13,11 +13,13 @@ import com.alpharays.autosound.data.trigger.Trigger
 import com.alpharays.autosound.databinding.AppTriggersViewBinding
 import com.alpharays.autosound.util.Constants
 import com.alpharays.autosound.util.Utilities
+import java.text.SimpleDateFormat
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
+import java.util.Date
 import java.util.Locale
 
 class TriggerCardsAdapter(private var triggers: MutableList<Trigger>) :
@@ -64,7 +66,9 @@ class TriggerCardsAdapter(private var triggers: MutableList<Trigger>) :
         val adapterPosition = holder.adapterPosition
 
         val date = StringBuilder()
-        val timeTobeShown = StringBuilder()
+        val myDate = Date(trigger.triggerTime.toLong())
+        val sdf = SimpleDateFormat("hh:mm a", Locale.getDefault())
+        val timeTobeShown = sdf.format(myDate)
         if (trigger.isRepeat) {
             var count = 0
             for (i in trigger.daysOfWeek.indices) {
@@ -94,26 +98,26 @@ class TriggerCardsAdapter(private var triggers: MutableList<Trigger>) :
         }
 
         // reorganizing time to be set
-        val timeParts = trigger.triggerTime.split(":")
-        val hour = timeParts[0].toInt()
-        val minute = timeParts[1].substringBefore(" ").toInt()
-        val period = timeParts[1].substringAfter(" ")
+//        val timeParts = trigger.triggerTime.split(":")
+//        val hour = timeParts[0].toInt()
+//        val minute = timeParts[1].substringBefore(" ").toInt()
+//        val period = timeParts[1].substringAfter(" ")
 
-        val localTime = if (period.equals("AM", ignoreCase = true) && hour == 12 && minute != 0) {
-            // Use 12-hour format for AM hours other than midnight
-            LocalTime.of(0, minute)
-        } else if (period.equals("PM", ignoreCase = true) && hour == 12) {
-            // Use 12-hour format for PM hours at noon (12 PM)
-            LocalTime.of(hour, minute)
-        } else if (period.equals("PM", ignoreCase = true)) {
-            // Convert PM hours to 24-hour format
-            LocalTime.of(hour + 12, minute)
-        } else {
-            // Use the provided hour and minute
-            LocalTime.of(hour, minute)
-        }
-        val dateTimeFormatter = DateTimeFormatter.ofPattern("hh:mm a", Locale.getDefault())
-        timeTobeShown.append(localTime.format(dateTimeFormatter).uppercase(Locale.ROOT))
+//        val localTime = if (period.equals("AM", ignoreCase = true) && hour == 12 && minute != 0) {
+//            // Use 12-hour format for AM hours other than midnight
+//            LocalTime.of(0, minute)
+//        } else if (period.equals("PM", ignoreCase = true) && hour == 12) {
+//            // Use 12-hour format for PM hours at noon (12 PM)
+//            LocalTime.of(hour, minute)
+//        } else if (period.equals("PM", ignoreCase = true)) {
+//            // Convert PM hours to 24-hour format
+//            LocalTime.of(hour + 12, minute)
+//        } else {
+//            // Use the provided hour and minute
+//            LocalTime.of(hour, minute)
+//        }
+//        val dateTimeFormatter = DateTimeFormatter.ofPattern("hh:mm a", Locale.getDefault())
+//        timeTobeShown.append(localTime.format(dateTimeFormatter).uppercase(Locale.ROOT))
 
         val dateToBeShown = if (trigger.isRepeat) "$date (Repeat)" else date.toString()
 //        val currentCalendar = Calendar.getInstance()

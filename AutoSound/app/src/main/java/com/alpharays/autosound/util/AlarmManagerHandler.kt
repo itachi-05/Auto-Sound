@@ -31,37 +31,21 @@ class AlarmManagerHandler(
         val flags = PendingIntent.FLAG_UPDATE_CURRENT
         val pendingIntent = PendingIntent.getBroadcast(context, requestCode, intent, flags)
 
-
-        val formatter = DateTimeFormatter.ofPattern("hh:mm a")
-        val time = LocalTime.parse(trigger.triggerTime, formatter)
-
-        val calendar = Calendar.getInstance()
-        calendar.apply {
-            set(Calendar.HOUR_OF_DAY, time.hour)
-            set(Calendar.MINUTE, time.minute)
-            set(Calendar.SECOND, 0) // Optional: Set seconds to 0 if needed
-        }
+        val timeInMillis = trigger.triggerTime.toLong()
 
         if (trigger.isRepeat) {
             Log.d("TAG2", "setAlarm: Setting repeating alarm")
             alarmManager.setRepeating(
                 AlarmManager.RTC_WAKEUP,
-                calendar.timeInMillis,
+                timeInMillis,
                 AlarmManager.INTERVAL_DAY * 7,
                 pendingIntent
             )
         } else {
             Log.d("TAG2", "setAlarm: Setting single alarm")
-            alarmManager.setExact(AlarmManager.RTC_WAKEUP, calendar.timeInMillis, pendingIntent)
+            alarmManager.setExact(AlarmManager.RTC_WAKEUP, timeInMillis, pendingIntent)
         }
     }
-
-//    fun cancelAlarm(requestCode: Int) {
-//        val intent = Intent(context, AutoSoundTriggerReceiver::class.java)
-//        val flags = PendingIntent.FLAG_UPDATE_CURRENT
-//        val pendingIntent = PendingIntent.getBroadcast(context, requestCode, intent, flags)
-//        alarmManager.cancel(pendingIntent)
-//    }
 
     fun cancelAlarm(requestCode: Int) {
         val intent = Intent(context, AutoSoundTriggerReceiver::class.java)
